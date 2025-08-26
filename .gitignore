@@ -1,0 +1,27 @@
+# Credenciais e Ambiente Virtual
+.env
+venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Arquivos de Log
+*.log
+
+# Arquivos de Backup e Temporários
+*.bak
+*_bkp.py
+*.py.bkp
+*.mwb
+
+# Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db
+
+# Pastas de configuração de IDEs
+.vscode/
+.idea/
+
+# Arquivos de Deploy
+*.zip

@@ -1,0 +1,458 @@
+{% extends 'base.html' %} {% block title %}Detalhes do Funcionário - LUMOB{%
+endblock %} {% block messages %}{% endblock %} {% block content %}
+<div class="container custom-form-container mt-4 mb-4 p-4">
+  <div class="title-band mb-2">
+    <h1 class="text-white text-center mb-0">
+      <i class="fas fa-user me-3"></i>Detalhes do Funcionário: {{
+      funcionario.Nome_Completo }}
+    </h1>
+  </div>
+
+  {# Área de Detalhes - Dados Cadastrais (Sem alterações) #}
+  <div class="card card-body shadow-sm mb-4 custom-details-card">
+    <h4 class="mb-3 custom-details-title">Dados Cadastrais</h4>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Matrícula:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">{{ funcionario.Matricula }}</p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Nome Completo:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">{{ funcionario.Nome_Completo }}</p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Data de Admissão:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.Data_Admissao.strftime('%d/%m/%Y') if
+          funcionario.Data_Admissao else 'N/A' }}
+        </p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Cargo:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">{{ funcionario.Nome_Cargo }}</p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Nível:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">{{ funcionario.Nome_Nivel }}</p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Status:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">{{ funcionario.Status }}</p>
+      </div>
+    </div>
+  </div>
+
+  {# Área de Detalhes - Dados Pessoais e Documentos (Sem alterações) #}
+  <div class="card card-body shadow-sm mb-4 custom-details-card">
+    <h4 class="mb-3 custom-details-title">Dados Pessoais e Documentos</h4>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Data de Nascimento:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.Data_Nascimento.strftime('%d/%m/%Y') if
+          funcionario.Data_Nascimento else 'N/A' }}
+        </p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Estado Civil:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.Estado_Civil | default('N/A') }}
+        </p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Nacionalidade:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.Nacionalidade | default('N/A') }}
+        </p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Naturalidade:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.Naturalidade | default('N/A') }}
+        </p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Gênero:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.Genero | default('N/A') }}
+        </p>
+      </div>
+    </div>
+    <h6 class="custom-subsection-title">Documentos:</h6>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">CPF:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.Cpf_Numero | default('N/A') }}
+        </p>
+      </div>
+    </div>
+    {% if funcionario.Rg_Numero %}
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">RG:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.Rg_Numero }} (Órgão: {{ funcionario.Rg_OrgaoEmissor |
+          default('N/A') }}, UF: {{ funcionario.Rg_UfEmissor | default('N/A')
+          }}, Emissão: {{ funcionario.Rg_DataEmissao.strftime('%d/%m/%Y') if
+          funcionario.Rg_DataEmissao else 'N/A' }})
+        </p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {# --- ÁREA DE ENDEREÇO E CONTATO CORRIGIDA --- #}
+  <div class="card card-body shadow-sm mb-4 custom-details-card">
+    <h4 class="mb-3 custom-details-title">Endereço Residencial</h4>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Logradouro:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.logradouro or 'N/A' }}{% if funcionario.numero_end %},
+          {{ funcionario.numero_end }}{% endif %} {% if funcionario.complemento
+          %}- {{ funcionario.complemento }}{% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Bairro:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.bairro or 'N/A' }}
+        </p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Cidade/Estado/CEP:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.cidade or 'N/A' }} / {{ funcionario.estado_end or 'N/A'
+          }} - {{ funcionario.cep or 'N/A' }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-body shadow-sm mb-4 custom-details-card">
+    <h4 class="mb-3 custom-details-title">Contatos</h4>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">Telefone Principal:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.tel_principal or 'N/A' }}
+        </p>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-md-6">
+        <p class="mb-0 fw-bold custom-details-label">E-mail Pessoal:</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-0 custom-details-value">
+          {{ funcionario.email_pessoal or 'N/A' }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {# Botões de Ação (Sem alterações) #}
+  <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <a
+      href="{{ url_for('pessoal_bp.edit_funcionario', matricula=funcionario.Matricula) }}"
+      class="btn btn-info custom-submit-btn"
+      >Editar</a
+    >
+    <button
+      type="button"
+      onclick="window.print()"
+      class="btn btn-primary custom-print-btn"
+    >
+      Imprimir
+    </button>
+    <form
+      action="{{ url_for('pessoal_bp.delete_funcionario', matricula=funcionario.Matricula) }}"
+      method="POST"
+      class="d-inline"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button
+        type="submit"
+        class="btn btn-danger custom-delete-btn"
+        onclick="return confirm('Tem certeza que deseja excluir este funcionário? Esta ação é irreversível.');"
+      >
+        Excluir
+      </button>
+    </form>
+    <a
+      href="{{ url_for('pessoal_bp.funcionarios_module') }}"
+      class="btn btn-secondary custom-cancel-btn"
+      >Cancelar</a
+    >
+  </div>
+</div>
+
+<style>
+  /* Seus estilos CSS originais (preservados) */
+  .title-band {
+    background-color: #212529;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .title-band h1 {
+    color: white;
+    margin-bottom: 0;
+    font-size: 1.5rem;
+  }
+  .custom-form-container {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: rgba(33, 37, 41, 0.85);
+    border: 1px solid #000000;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.3),
+      0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    position: relative;
+    transform: translateY(-3px);
+  }
+  .custom-details-card {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #212529;
+  }
+  .custom-details-title {
+    color: #212529;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding-bottom: 0.5rem;
+  }
+  .custom-details-label {
+    color: #343a40;
+    font-size: 0.9rem;
+  }
+  .custom-details-value {
+    color: #495057;
+    font-size: 0.9rem;
+  }
+  .custom-subsection-title {
+    color: #212529;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding-bottom: 0.5rem;
+  }
+  .custom-submit-btn,
+  .custom-cancel-btn,
+  .custom-delete-btn,
+  .custom-print-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease-in-out;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    margin-left: 0.5rem;
+  }
+  .custom-submit-btn {
+    background: linear-gradient(135deg, #198754, #157347);
+    color: white;
+    box-shadow: 0 0.25rem 0.5rem rgba(25, 135, 84, 0.3);
+  }
+  .custom-submit-btn:hover {
+    background: linear-gradient(135deg, #157347, #146c43);
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(25, 135, 84, 0.4);
+  }
+  .custom-cancel-btn {
+    background: linear-gradient(135deg, #6c757d, #5c636a);
+    color: white;
+    box-shadow: 0 0.25rem 0.5rem rgba(108, 117, 125, 0.3);
+  }
+  .custom-cancel-btn:hover {
+    background: linear-gradient(135deg, #5c636a, #565e64);
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(108, 117, 125, 0.4);
+  }
+  .custom-delete-btn {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    box-shadow: 0 0.25rem 0.5rem rgba(220, 53, 69, 0.3);
+  }
+  .custom-delete-btn:hover {
+    background: linear-gradient(135deg, #c82333, #bd2130);
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(220, 53, 69, 0.4);
+  }
+  .custom-print-btn {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+    box-shadow: 0 0.25rem 0.5rem rgba(13, 110, 253, 0.3);
+  }
+  .custom-print-btn:hover {
+    background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.4);
+  }
+  .custom-submit-btn:active,
+  .custom-cancel-btn:active,
+  .custom-delete-btn:active,
+  .custom-print-btn:active {
+    transform: translateY(-1px);
+  }
+  .custom-submit-btn::before,
+  .custom-cancel-btn::before,
+  .custom-delete-btn::before,
+  .custom-print-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    transition: left 0.5s ease-in-out;
+  }
+  .custom-submit-btn:hover::before,
+  .custom-cancel-btn:hover::before,
+  .custom-delete-btn:hover::before,
+  .custom-print-btn:hover::before {
+    left: 100%;
+  }
+  @media (max-width: 768px) {
+    .custom-form-container {
+      max-width: 95%;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    .title-band h1 {
+      font-size: 1.3rem;
+    }
+    .custom-details-label,
+    .custom-details-value,
+    .custom-subsection-title {
+      font-size: 0.85rem;
+    }
+    .d-md-flex {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .custom-submit-btn,
+    .custom-cancel-btn,
+    .custom-delete-btn,
+    .custom-print-btn {
+      margin-left: 0 !important;
+      margin-bottom: 0.5rem;
+    }
+  }
+  @media print {
+    .d-grid,
+    .title-band,
+    .actions,
+    .back-link,
+    .main-header,
+    .main-footer,
+    .navbar {
+      display: none !important;
+    }
+    .custom-form-container {
+      box-shadow: none !important;
+      border: none !important;
+      background-color: transparent !important;
+      transform: none !important;
+      padding: 0 !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      color: #000 !important;
+      background: none !important;
+    }
+    h1,
+    h4,
+    h6,
+    p {
+      color: #000 !important;
+    }
+    .custom-details-card {
+      background-color: transparent !important;
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+    }
+    .custom-details-title,
+    .custom-subsection-title {
+      border-bottom-color: #ccc !important;
+    }
+  }
+</style>
+{% endblock %}

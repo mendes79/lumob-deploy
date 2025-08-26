@@ -1,0 +1,334 @@
+{% extends 'base.html' %} {% block title %}Bem vindo - LUMOB{% endblock %} {%
+block messages %}{% endblock %} {# Suprime as mensagens flash #} {% block
+content %}
+<div class="lumob-main-container">
+  <div class="lumob-content-container">
+    <header class="lumob-header">
+      <div class="header-content">
+        <div class="title-info">
+          <h1 class="app-title">LUMOB</h1>
+          <p class="app-subtitle">Selecione um módulo para começar</p>
+        </div>
+        <div class="user-info">
+          <span class="welcome-message"
+            >Bem-vindo, <span class="username">{{ user.username }}</span></span
+          >
+          <a
+            href="{{ url_for('logout') }}"
+            class="btn btn-danger btn-sm logout-btn"
+          >
+            <i class="fas fa-sign-out-alt"></i> Sair
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="module-grid">
+      {% for module in all_modules_db %} {% set module_name_display =
+      module.Nome_Modulo %} {% set module_url = '#' %} {% set image_path_base =
+      url_for('static', filename='img/') %} {% set module_image_file = '' %} {%
+      set is_restricted = not user.can_access_module(module_name_display) %} {#
+      Mapeamento de Nome do Módulo para URL e Imagem #} {% if
+      module_name_display == 'Obras' %} {% set module_url =
+      url_for('obras_bp.obras_module') %} {% set module_image_file =
+      'obras_colorful.jpg' %} {% elif module_name_display == 'Segurança' %} {%
+      set module_url = url_for('seguranca_bp.seguranca_module') %} {% set
+      module_image_file = 'seguranca_colorful.jpg' %} {% elif
+      module_name_display == 'Pessoal' %} {% set module_url =
+      url_for('pessoal_bp.pessoal_module') %} {% set module_image_file =
+      'pessoal_colorful.jpg' %} {% elif module_name_display == 'Usuários' %} {%
+      set module_url = url_for('users_bp.users_module') %} {% set
+      module_image_file = 'users_colorful.jpg' %} {% endif %}
+
+      <div
+        class="module-card {% if is_restricted %}module-card-restricted{% endif %}"
+        {%
+        if
+        not
+        is_restricted
+        %}onclick="location.href='{{ module_url }}'"
+        {%
+        endif
+        %}
+      >
+        <div
+          class="card-hero-image"
+          style="background-image: url('{{ image_path_base }}{{ module_image_file }}');"
+        ></div>
+
+        <div class="card-content">
+          <h3 class="module-title">{{ module_name_display }}</h3>
+          {% if is_restricted %}
+          <span class="restricted-tag">Acesso Restrito</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <footer class="lumob-footer">
+      <p>&copy; {{ now.year }} LUMOB. Todos os direitos reservados.</p>
+      <p>Desenvolvido por Mendes Engenharia.</p>
+    </footer>
+  </div>
+</div>
+
+<style>
+  /* 1. ESTILOS BASE E VARIÁVEIS (Inspirado em obras_welcome.html) */
+  :root {
+    --primary-color: #2c3e50;
+    --secondary-color: #34495e;
+    --accent-color: #3498db;
+    --danger-color: #e74c3c;
+    --restricted-red: #e74c3c;
+    --light-gray: #ecf0f1;
+    --text-dark: #2c3e50;
+    --text-light: #ffffff;
+    --glass-bg: rgba(255, 255, 255, 0.95);
+    --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --shadow-heavy: 0 16px 48px rgba(0, 0, 0, 0.15);
+    --glow-accent: 0 0 20px rgba(52, 152, 219, 0.3);
+  }
+
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    color: var(--text-dark);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* 2. LAYOUT PRINCIPAL (Container e Header) */
+  .lumob-main-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .lumob-content-container {
+    max-width: 1200px;
+    width: 100%;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: var(--shadow-heavy);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem 3rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .lumob-header {
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Para melhor responsividade */
+  }
+
+  .app-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+  }
+
+  .app-subtitle {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin-top: 0.25rem;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .welcome-message {
+    font-size: 0.9rem;
+    color: var(--text-dark);
+  }
+
+  .username {
+    font-weight: 600;
+    color: var(--accent-color);
+  }
+
+  .logout-btn {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    text-decoration: none;
+  }
+
+  .logout-btn:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    color: white;
+  }
+
+  /* 3. GRADE E CARDS DE MÓDULOS (Novo Estilo) */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .module-card {
+    background: var(--text-light);
+    border-radius: 16px;
+    box-shadow: var(--shadow-medium);
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid transparent; /* Borda inicial transparente */
+    transition: transform 0.3s ease, box-shadow 0.3s ease,
+      border-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 220px;
+  }
+
+  /* EFEITO DE HOVER (SELEÇÃO) */
+  .module-card:not(.module-card-restricted):hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-heavy), var(--glow-accent);
+    border-color: var(--accent-color);
+  }
+
+  /* IMAGEM DE CAPA (HERO IMAGE) */
+  .card-hero-image {
+    height: 30%; /* Ocupa 25% da altura do card */
+    width: 100%;
+    background-size: cover;
+    background-position: 50% 13%; /*parte da imagem que estará visivel no card p.e.: 50% 0% é center top*/
+    filter: grayscale(50%); /* Leve desaturação inicial */
+    transition: filter 0.3s ease;
+  }
+
+  .module-card:not(.module-card-restricted):hover .card-hero-image {
+    filter: grayscale(0%); /* Remove o filtro no hover */
+  }
+
+  /* CONTEÚDO DO CARD (TÍTULO CENTRALIZADO) */
+  .card-content {
+    flex-grow: 1; /* Ocupa o espaço restante */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .module-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+    transition: color 0.3s ease;
+  }
+
+  .module-card:not(.module-card-restricted):hover .module-title {
+    color: var(--accent-color);
+  }
+
+  /* ESTILOS PARA CARDS RESTRITOS */
+  .module-card-restricted {
+    cursor: not-allowed;
+    filter: grayscale(90%);
+    opacity: 0.7;
+  }
+
+  .module-card-restricted:hover {
+    transform: none;
+    box-shadow: var(--shadow-medium);
+    border-color: transparent;
+  }
+
+  .restricted-tag {
+    background-color: var(--restricted-red);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  /* 4. RODAPÉ */
+  .lumob-footer {
+    text-align: center;
+    padding-top: 0.5rem;
+    margin-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.75rem;
+    color: var(--secondary-color);
+  }
+
+  .lumob-footer p {
+    margin: 0.2rem 0;
+  }
+
+  /* 5. RESPONSIVIDADE */
+  @media (max-width: 768px) {
+    .lumob-content-container {
+      padding: 1.5rem;
+    }
+    .header-content {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+    .module-grid {
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    .module-card {
+      min-height: 200px;
+    }
+    .module-title {
+      font-size: 1.3rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .lumob-main-container {
+      padding: 1rem 0.5rem;
+    }
+    .lumob-content-container {
+      padding: 1rem;
+    }
+    .app-title {
+      font-size: 2rem;
+    }
+    .app-subtitle {
+      font-size: 1rem;
+    }
+    .user-info {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .module-grid {
+      grid-template-columns: 1fr; /* Uma coluna em telas muito pequenas */
+    }
+    .module-card {
+      min-height: 180px;
+    }
+  }
+</style>
+{% endblock %}

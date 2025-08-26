@@ -1,0 +1,2 @@
+INSERT INTO `usuarios` (`username`, `email`, `password`, `role`) VALUES
+('admin', 'mendes79@gmail.com', '$scrypt$ln=16,r=8,p=1$X4uRUsrZG+Ock/Ieg1DKGQ$GGaVcZCYWk/bSDrQ4UdPAXRpHyNu5jjjpcvhDUmdEnU', 'admin');

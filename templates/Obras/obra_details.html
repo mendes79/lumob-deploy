@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard da Obra - {{ obra.Nome_Obra }}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Estilos gerais da aplicação (copiados/adaptados do seu design) */
+      :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #34495e;
+        --accent-color: #3498db;
+        --success-color: #27ae60;
+        --light-gray: #ecf0f1;
+        --text-dark: #2c3e50;
+        --text-light: #ffffff;
+        --glass-bg: rgba(255, 255, 255, 0.95);
+        --shadow-medium: 0 8px 32px rgba(0, 0, 0, 0.12);
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        color: var(--text-dark);
+        line-height: 1.6;
+      }
+      .main-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: var(--glass-bg);
+        border-radius: 24px;
+        box-shadow: var(--shadow-medium);
+      }
+      .header-band {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: var(--text-light);
+        padding: 1.2rem 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+      }
+      .header-band h1 {
+        font-size: 1.8rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      .back-button {
+        padding: 0.6rem 1.2rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-light);
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      .back-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .grid-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+      }
+      .card-custom {
+        background: #fff;
+        padding: 1.5rem;
+        border-radius: 16px;
+        box-shadow: var(--shadow-medium);
+      }
+      .card-custom h4 {
+        border-bottom: 2px solid var(--light-gray);
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+      }
+      .details-grid p {
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+      }
+      .details-grid strong {
+        color: var(--secondary-color);
+        display: block;
+        margin-bottom: 0.2rem;
+      }
+      .table-responsive {
+        margin-top: 1rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      th,
+      td {
+        padding: 0.6rem;
+        text-align: center;
+        border: 1px solid var(--light-gray);
+      }
+      th {
+        background-color: var(--secondary-color);
+        color: var(--text-light);
+      }
+      tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+      }
+      td:first-child {
+        text-align: left;
+        font-weight: bold;
+      }
+      .chart-container {
+        margin-top: 2rem;
+      }
+
+      @media (max-width: 992px) {
+        .grid-container {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-container">
+      <div class="header-band">
+        <h1>
+          <i class="fas fa-tachometer-alt"></i> Dashboard da Obra: {{
+          obra.Nome_Obra }}
+        </h1>
+        <a
+          href="{{ url_for('obras_bp.gerenciar_obras_lista') }}"
+          class="back-button"
+        >
+          <i class="fas fa-arrow-left"></i> Voltar à Lista de Obras
+        </a>
+      </div>
+
+      <div class="grid-container">
+        <div class="card-custom">
+          <h4><i class="fas fa-info-circle"></i> Informações Gerais</h4>
+          <div class="details-grid">
+            <p><strong>ID da Obra:</strong> #{{ obra.ID_Obras }}</p>
+            <p>
+              <strong>Número:</strong> {{ obra.Numero_Obra|default('N/A') }}
+            </p>
+            <p>
+              <strong>Cliente:</strong> {{ obra.Nome_Cliente|default('N/A') }}
+            </p>
+            <p>
+              <strong>Contrato:</strong> {{ obra.Numero_Contrato|default('N/A')
+              }}
+            </p>
+            <p>
+              <strong>Status:</strong> {{ obra.Status_Obra|default('N/A') }}
+            </p>
+            <p>
+              <strong>Valor Total (Obra + Aditivos):</strong> R$ {{
+              "%.2f"|format(obra.Valor_Obra + obra.Valor_Aditivo_Total) if
+              obra.Valor_Obra is not none else '0.00' }}
+            </p>
+            <p>
+              <strong>Data Início Prevista:</strong> {{
+              obra.Data_Inicio_Prevista.strftime('%d/%m/%Y') if
+              obra.Data_Inicio_Prevista else 'N/A' }}
+            </p>
+            <p>
+              <strong>Data Fim Prevista:</strong> {{
+              obra.Data_Fim_Prevista.strftime('%d/%m/%Y') if
+              obra.Data_Fim_Prevista else 'N/A' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="card-custom">
+          <h4>
+            <i class="fas fa-calendar-alt"></i> Resumo Mensal - {{
+            dashboard_data.year }}
+          </h4>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  {% for month in dashboard_data.months %}
+                  <th>{{ month }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Avanço Físico (%)</td>
+                  {% for value in dashboard_data.monthly_physical %}
+                  <td>{{ "%.2f"|format(value) }}%</td>
+                  {% endfor %}
+                </tr>
+                <tr>
+                  <td>Avanço Financeiro (R$)</td>
+                  {% for value in dashboard_data.monthly_financial %}
+                  <td>R$ {{ "%.2f"|format(value)|replace('.', ',') }}</td>
+                  {% endfor %}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="chart-container">
+            <h4><i class="fas fa-chart-line"></i> Evolução do Avanço Físico</h4>
+            <canvas id="physicalProgressChart"></canvas>
+          </div>
+
+          <div class="chart-container">
+            <h4>
+              <i class="fas fa-chart-bar"></i> Evolução do Avanço Financeiro
+              (Medições)
+            </h4>
+            <canvas id="financialProgressChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Passando dados do Flask (Python) para o JavaScript
+      const dashboardData = {{ dashboard_data|tojson }};
+
+      // Configuração do Gráfico de Avanço Físico (COM ESCALA FIXA EM 100%)
+      const ctxPhysical = document.getElementById('physicalProgressChart').getContext('2d');
+      new Chart(ctxPhysical, {
+          type: 'bar', // Tipo base do gráfico
+          data: {
+              labels: dashboardData.months,
+              datasets: [{
+                  type: 'bar',
+                  label: 'Avanço Físico Mensal (%)',
+                  data: dashboardData.monthly_physical,
+                  backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                  borderColor: 'rgba(52, 152, 219, 1)',
+                  borderWidth: 1
+              }, {
+                  type: 'line',
+                  label: 'Avanço Físico Acumulado (%)',
+                  data: dashboardData.accumulated_physical,
+                  borderColor: 'rgba(231, 76, 60, 1)',
+                  backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                  fill: false,
+                  tension: 0.1,
+                  yAxisID: 'y'
+              }]
+          },
+          options: {
+              responsive: true,
+              plugins: {
+                  title: {
+                      display: true,
+                      text: 'Avanço Físico Mensal vs. Acumulado (%)'
+                  }
+              },
+              scales: {
+                  y: {
+                      beginAtZero: true,
+                      max: 100, // Define o valor máximo do eixo Y para 100
+                      ticks: {
+                          stepSize: 10, // Define as divisões do eixo Y de 10 em 10
+                          // Adiciona o símbolo de '%' aos rótulos do eixo Y
+                          callback: function(value) {
+                              return value + '%';
+                          }
+                      },
+                      title: {
+                          display: true,
+                          text: 'Percentual (%)'
+                      }
+                  }
+              }
+          }
+      });
+
+      // Configuração do Gráfico de Avanço Financeiro
+      const ctxFinancial = document.getElementById('financialProgressChart').getContext('2d');
+      new Chart(ctxFinancial, {
+          type: 'bar', // Tipo base do gráfico
+          data: {
+              labels: dashboardData.months,
+              datasets: [{
+                  type: 'bar',
+                  label: 'Avanço Financeiro Mensal (R$)',
+                  data: dashboardData.monthly_financial,
+                  backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                  borderColor: 'rgba(39, 174, 96, 1)',
+                  borderWidth: 1
+              }, {
+                  type: 'line',
+                  label: 'Avanço Financeiro Acumulado (R$)',
+                  data: dashboardData.accumulated_financial,
+                  borderColor: 'rgba(243, 156, 18, 1)',
+                  backgroundColor: 'rgba(243, 156, 18, 0.2)',
+                  fill: false,
+                  tension: 0.1,
+                  yAxisID: 'y'
+              }]
+          },
+          options: {
+              responsive: true,
+              plugins: {
+                  title: {
+                      display: true,
+                      text: 'Avanço Financeiro Mensal vs. Acumulado (R$)'
+                  },
+                  tooltip: {
+                      callbacks: {
+                          label: function(context) {
+                              let label = context.dataset.label || '';
+                              if (label) {
+                                  label += ': ';
+                              }
+                              if (context.parsed.y !== null) {
+                                  label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                              }
+                              return label;
+                          }
+                      }
+                  }
+              },
+              scales: {
+                  y: {
+                      beginAtZero: true,
+                      title: {
+                          display: true,
+                          text: 'Valor (R$)'
+                      },
+                      ticks: {
+                         callback: function(value, index, values) {
+                             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+                         }
+                      }
+                  }
+              }
+          }
+      });
+    </script>
+  </body>
+</html>
