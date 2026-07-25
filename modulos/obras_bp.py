@@ -2590,6 +2590,7 @@ def export_avancos_fisicos_excel():
 @obras_bp.route('/get_acumulado_obra/<int:obra_id>', methods=['GET'])
 @obras_bp.route('/get_acumulado_obra/<int:obra_id>/<int:avanco_id_excluir>', methods=['GET'])
 @login_required
+@module_required('Obras')
 def get_acumulado_obra(obra_id, avanco_id_excluir=None):
     """
     Endpoint AJAX para retornar o percentual de avanço físico acumulado de uma obra.

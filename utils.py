@@ -37,6 +37,21 @@ def module_required(module_name):
         return decorated_function
     return decorator
 
+# --- NOVO DECORATOR DE PERMISSÃO (RESTRITO A ADMIN) ---
+def admin_required(message, redirect_endpoint='users_bp.users_module'):
+    """
+    Decorator que restringe o acesso à rota exclusivamente a usuários com role 'admin'.
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated or current_user.role != 'admin':
+                flash(message, 'warning')
+                return redirect(url_for(redirect_endpoint))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 # --- NOVA LÓGICA DE NORMALIZAÇÃO DE ENUM ---
 
 # Dicionários de mapeamento para cada campo ENUM

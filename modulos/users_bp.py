@@ -10,6 +10,7 @@ from flask_login import login_required, current_user
 # Importações dos managers de banco de dados
 from database.db_base import DatabaseManager
 from database.db_user_manager import UserManager
+from utils import admin_required
 
 # Crie a instância do Blueprint para o Módulo Usuários
 users_bp = Blueprint('users_bp', __name__, url_prefix='/users')
@@ -17,15 +18,12 @@ users_bp = Blueprint('users_bp', __name__, url_prefix='/users')
 # 5.1 ROTAS DE USUARIOS
 @users_bp.route('/')
 @login_required
+@admin_required('Acesso negado. Apenas administradores podem acessar o módulo Usuários.', redirect_endpoint='welcome')
 def users_module():
     """
     Rota principal do módulo Usuários.
     O módulo de usuários (users_module) deve ter acesso restrito apenas a 'admin'.
     """
-    if current_user.role != 'admin':
-        flash('Acesso negado. Apenas administradores podem acessar o módulo Usuários.', 'warning')
-        return redirect(url_for('welcome')) # Redireciona para uma rota geral no app.py
-
     try:
         # db_config é acessível porque está no contexto do app principal
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
@@ -42,11 +40,8 @@ def users_module():
 # 5.1.1 ROTAS DO CRUD DE USUARIOS - CRIAR
 @users_bp.route('/add', methods=['GET', 'POST'])
 @login_required
+@admin_required('Acesso negado. Apenas administradores podem adicionar usuários.')
 def add_user():
-    if current_user.role != 'admin':
-        flash('Acesso negado. Apenas administradores podem adicionar usuários.', 'warning')
-        return redirect(url_for('users_bp.users_module')) # Redireciona dentro do Blueprint
-
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
@@ -89,11 +84,8 @@ def add_user():
 # 5.1.2 ROTAS DO CRUD DE USUARIOS - EDITAR
 @users_bp.route('/edit/<int:user_id>', methods=['GET', 'POST'])
 @login_required
+@admin_required('Acesso negado. Apenas administradores podem editar usuários.')
 def edit_user(user_id):
-    if current_user.role != 'admin':
-        flash('Acesso negado. Apenas administradores podem editar usuários.', 'warning')
-        return redirect(url_for('users_bp.users_module'))
-
     # Este é o bloco TRY que precisa englobar toda a função
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
@@ -163,11 +155,8 @@ def edit_user(user_id):
 # 5.1.3 ROTAS DO CRUD DE USUARIOS - DELETAR
 @users_bp.route('/delete/<int:user_id>', methods=['POST'])
 @login_required
+@admin_required('Acesso negado. Apenas administradores podem deletar usuários.')
 def delete_user(user_id):
-    if current_user.role != 'admin':
-        flash('Acesso negado. Apenas administradores podem deletar usuários.', 'warning')
-        return redirect(url_for('users_bp.users_module'))
-
     if current_user.id == user_id:
         flash('Você não pode deletar sua própria conta.', 'danger')
         return redirect(url_for('users_bp.users_module'))
@@ -195,11 +184,8 @@ def delete_user(user_id):
 # 5.1.4 ROTAS DO CRUD DE USUARIOS - RESETAR SENHA
 @users_bp.route('/reset_password/<int:user_id>', methods=['POST'])
 @login_required
+@admin_required('Acesso negado. Apenas administradores podem resetar senhas.')
 def reset_password(user_id):
-    if current_user.role != 'admin':
-        flash('Acesso negado. Apenas administradores podem resetar senhas.', 'warning')
-        return redirect(url_for('users_bp.users_module'))
-
     if current_user.id == user_id:
         flash('Você não pode resetar a sua própria senha padrão por aqui. Altere-a pela edição.', 'danger')
         return redirect(url_for('users_bp.users_module'))
@@ -228,11 +214,8 @@ def reset_password(user_id):
 # 5.1.5 ROTA PERMISSÕES DE USUARIOS
 @users_bp.route('/permissions/<int:user_id>', methods=['GET', 'POST'])
 @login_required
+@admin_required('Acesso negado. Apenas administradores podem gerenciar permissões.')
 def manage_user_permissions(user_id):
-    if current_user.role != 'admin':
-        flash('Acesso negado. Apenas administradores podem gerenciar permissões.', 'warning')
-        return redirect(url_for('users_bp.users_module'))
-
     # Este é o bloco TRY PRINCIPAL que engloba toda a lógica da função
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
