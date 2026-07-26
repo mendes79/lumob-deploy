@@ -30,6 +30,7 @@ from io import BytesIO      # Adicione este import no topo do seu app.py
 # Importações dos managers de banco de dados
 from database.db_base import DatabaseManager
 from database.db_user_manager import UserManager
+from database.db_tenant_manager import TenantManager
 # from database.db_hr_manager import HrManager # Para o módulo de RH/DP (mantido para estrutura) <<< ver se ainda precisa! Pode apagar!!!
 from database.db_obras_manager import ObrasManager # Para o módulo Obras
 from database.db_seguranca_manager import SegurancaManager # Para o módulo Segurança
@@ -77,7 +78,7 @@ login_manager.login_view = 'login'
 # Classe User para Flask-Login
 class User(UserMixin):
     # ALTERAÇÃO: Adicionado 'email' ao construtor
-    def __init__(self, id, username, role, email=None, permissions=None):
+    def __init__(self, id, username, role, email=None, permissions=None, tenant_id=None):
         self.id = id
         self.username = username
         self.role = role
@@ -85,6 +86,7 @@ class User(UserMixin):
         # permissions será uma lista de nomes de módulos (strings), ex: ['Pessoal', 'Obras']
         # MANTIDO: Você já tem 'permissions' e 'can_access_module'
         self.permissions = permissions if permissions is not None else []
+        self.tenant_id = tenant_id
 
     def get_id(self):
         return str(self.id)
@@ -98,16 +100,26 @@ class User(UserMixin):
 # Carregador de usuário para Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
+    subdomain = request.host.split(':')[0].split('.')[0]
     try:
         with DatabaseManager(**db_config) as db_base:
-            user_manager = UserManager(db_base)
+            tenant = TenantManager(db_base).find_by_subdomain(subdomain)
+            if not tenant or not tenant['ativo']:
+                return None
+
+            user_manager = UserManager(db_base, tenant['id'])
             # ALTERAÇÃO: user_data agora deve incluir 'email'
             user_data = user_manager.find_user_by_id(user_id)
             if user_data:
+                # Defesa em profundidade: se o tenant_id do usuário não bater com o
+                # tenant resolvido pelo subdomínio atual, recusa mesmo existindo
+                if user_data['tenant_id'] != tenant['id']:
+                    return None
                 # Carregar as permissões do usuário e anexar ao objeto User
                 user_permissions = user_manager.get_user_permissions(user_id)
                 # ALTERAÇÃO: Passando user_data['email'] para o construtor do User
-                return User(user_data['id'], user_data['username'], user_data['role'], user_data.get('email'), user_permissions)
+                return User(user_data['id'], user_data['username'], user_data['role'],
+                            user_data.get('email'), user_permissions, tenant_id=tenant['id'])
         return None
     except mysql.connector.Error as e:
         print(f"Erro ao carregar usuário: {e}")
@@ -129,6 +141,18 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('welcome'))
 
+    # Resolve o tenant pelo subdomínio ANTES de qualquer coisa, inclusive antes de
+    # olhar pra username/senha do formulário.
+    subdomain = request.host.split(':')[0].split('.')[0]
+    with DatabaseManager(**db_config) as db_base:
+        tenant = TenantManager(db_base).find_by_subdomain(subdomain)
+
+    if not tenant or not tenant['ativo']:
+        # Mensagem genérica pros dois casos (subdomínio inexistente OU tenant
+        # desativado) — não revela qual dos dois é.
+        flash('Endereço inválido ou empresa não encontrada.', 'danger')
+        return render_template('login.html')
+
     if request.method == 'POST':
         # Verifica se a requisição é AJAX (enviada pelo JavaScript)
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
@@ -147,13 +171,14 @@ def login():
 
         try:
             with DatabaseManager(**db_config) as db_base:
-                user_manager = UserManager(db_base)
+                user_manager = UserManager(db_base, tenant['id'])
                 user_record = user_manager.authenticate_user(username, password) # Passa a senha em texto puro para autenticação
 
                 if user_record:
                     user_permissions = user_manager.get_user_permissions(user_record['id'])
                     # Certifique-se de que 'email' existe no user_record, use .get() para segurança
-                    user = User(user_record['id'], user_record['username'], user_record['role'], user_record.get('email'), user_permissions)
+                    user = User(user_record['id'], user_record['username'], user_record['role'],
+                                user_record.get('email'), user_permissions, tenant_id=tenant['id'])
                     login_user(user)
                     if is_ajax: # Se for AJAX, retorna JSON de sucesso
                         return jsonify(success=True, redirect_url=url_for('welcome'))
@@ -203,7 +228,7 @@ def logout():
 def welcome():
     try:
         with DatabaseManager(**db_config) as db_base:
-            user_manager = UserManager(db_base)
+            user_manager = UserManager(db_base, current_user.tenant_id)
             # Garante que as permissões e email do usuário atual estejam atualizadas
             current_user.permissions = user_manager.get_user_permissions(current_user.id)
             updated_user_data = user_manager.find_user_by_id(current_user.id)
@@ -219,7 +244,7 @@ def welcome():
     all_modules_db = []
     try:
         with DatabaseManager(**db_config) as db_base:
-            user_manager = UserManager(db_base)
+            user_manager = UserManager(db_base, current_user.tenant_id)
             all_modules_db = user_manager.get_all_modules()
     except Exception as e:
         print(f"Erro ao obter todos os módulos para welcome.html: {e}")

@@ -86,3 +86,18 @@ class DatabaseManager:
         if result and result[0]:
             return result[0][id_column]
         return None
+
+
+class TenantScopedManager:
+    """
+    Base para managers de tabelas de negócio. tenant_id é fixado uma vez,
+    na criação do manager (uma instância por request), não repetido em cada chamada.
+    """
+    def __init__(self, db, tenant_id):
+        self.db = db
+        self.tenant_id = tenant_id
+
+    def tenant_clause(self, alias=None, column='tenant_id'):
+        """Retorna (fragmento_sql, valor) pra entrar no WHERE/JOIN e nos params."""
+        col = f"{alias}.{column}" if alias else column
+        return f"{col} = %s", self.tenant_id

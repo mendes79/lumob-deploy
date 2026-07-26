@@ -27,7 +27,7 @@ def users_module():
     try:
         # db_config é acessível porque está no contexto do app principal
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            user_manager = UserManager(db_base)
+            user_manager = UserManager(db_base, current_user.tenant_id)
             users = user_manager.get_all_users()
             return render_template('users/users_module.html', users=users, user=current_user)
     except mysql.connector.Error as e:
@@ -50,7 +50,7 @@ def add_user():
 
         try:
             with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-                user_manager = UserManager(db_base)
+                user_manager = UserManager(db_base, current_user.tenant_id)
 
                 if user_manager.find_user_by_username(username):
                     flash(f"Usuário '{username}' já existe. Por favor, escolha outro.", 'danger')
@@ -89,7 +89,7 @@ def edit_user(user_id):
     # Este é o bloco TRY que precisa englobar toda a função
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            user_manager = UserManager(db_base)
+            user_manager = UserManager(db_base, current_user.tenant_id)
             user_to_edit = user_manager.find_user_by_id(user_id)
 
             if not user_to_edit:
@@ -163,7 +163,7 @@ def delete_user(user_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            user_manager = UserManager(db_base)
+            user_manager = UserManager(db_base, current_user.tenant_id)
             user_to_delete = user_manager.find_user_by_id(user_id)
             if user_to_delete:
                 if user_manager.delete_user(user_id):
@@ -192,7 +192,7 @@ def reset_password(user_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            user_manager = UserManager(db_base)
+            user_manager = UserManager(db_base, current_user.tenant_id)
             user_to_reset = user_manager.find_user_by_id(user_id)
             if user_to_reset:
                 # A senha padrão está definida no db_user_manager.py como "lumob@123"
@@ -219,7 +219,7 @@ def manage_user_permissions(user_id):
     # Este é o bloco TRY PRINCIPAL que engloba toda a lógica da função
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            user_manager = UserManager(db_base)
+            user_manager = UserManager(db_base, current_user.tenant_id)
             user_to_manage = user_manager.find_user_by_id(user_id)
 
             if not user_to_manage:
