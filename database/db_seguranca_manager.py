@@ -125,7 +125,7 @@ class SegurancaManager:
         """
         params = (
             tipo_registro, data_hora_ocorrencia, local_ocorrencia, id_obras,
-            descricao_resumida, causas_identificadas, acoes_preventivas_recomendadas, # Corrigido o nome da variável aqui
+            descricao_resumida, causas_identificadas, acoes_corretivas_tomadas, # Corrigido o nome da variável aqui
             acoes_preventivas_recomendadas, status_registro, responsavel_investigacao_matricula,
             data_fechamento, observacoes
         )
