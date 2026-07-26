@@ -67,7 +67,7 @@ def funcionarios_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             funcionarios = pessoal_manager.get_all_funcionarios(
                 search_matricula=search_matricula,
@@ -109,7 +109,7 @@ def add_funcionario():
    
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             if request.method == 'POST':
                 # --- Dados de Funcionário Principal (Tabela 'funcionarios') ---
@@ -377,7 +377,7 @@ def edit_funcionario(matricula):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             
             funcionario = pessoal_manager.get_funcionario_by_matricula(matricula)
             
@@ -718,7 +718,7 @@ def delete_funcionario(matricula):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base) 
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) 
             success = pessoal_manager.delete_funcionario(matricula)
             if success:
                 flash('Funcionário excluído com sucesso!', 'success')
@@ -743,7 +743,7 @@ def delete_funcionario(matricula):
 def funcionario_details(matricula):
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             funcionario = pessoal_manager.get_funcionario_by_matricula(matricula)
 
             if not funcionario:
@@ -800,7 +800,7 @@ def export_funcionarios_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base) 
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) 
 
             search_matricula = request.args.get('matricula')
             search_nome = request.args.get('nome')
@@ -962,7 +962,7 @@ def import_funcionarios():
         MAPA_TIPO_CONTRATACAO = {'clt': 'CLT', 'pj': 'PJ', 'temporario': 'Temporario', 'temporário': 'Temporario'}
 
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             
             matriculas_no_banco = pessoal_manager.get_all_matriculas()
             cpfs_no_banco = pessoal_manager.get_all_cpfs()
@@ -1072,7 +1072,7 @@ def cargos_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             cargos = pessoal_manager.get_all_cargos(search_nome=search_nome)
 
         return render_template(
@@ -1100,7 +1100,7 @@ def add_cargo():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             if request.method == 'POST':
                 nome_cargo = request.form['nome_cargo'].strip()
@@ -1154,7 +1154,7 @@ def edit_cargo(cargo_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             cargo = pessoal_manager.get_cargo_by_id(cargo_id)
 
             if not cargo:
@@ -1216,7 +1216,7 @@ def delete_cargo(cargo_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             success = pessoal_manager.delete_cargo(cargo_id)
             if success:
                 flash('Cargo excluído com sucesso!', 'success')
@@ -1242,7 +1242,7 @@ def cargo_details(cargo_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             cargo = pessoal_manager.get_cargo_by_id(cargo_id)
 
             if not cargo:
@@ -1273,7 +1273,7 @@ def export_cargos_excel():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             search_nome = request.args.get('nome_cargo')
             cargos_data = pessoal_manager.get_all_cargos(search_nome=search_nome)
 
@@ -1319,7 +1319,7 @@ def niveis_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             niveis = pessoal_manager.get_all_niveis(search_nome=search_nome)
 
         return render_template(
@@ -1347,7 +1347,7 @@ def add_nivel():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             if request.method == 'POST':
                 nome_nivel = request.form['nome_nivel'].strip()
@@ -1400,7 +1400,7 @@ def edit_nivel(nivel_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             nivel = pessoal_manager.get_nivel_by_id(nivel_id)
 
             if not nivel:
@@ -1461,7 +1461,7 @@ def delete_nivel(nivel_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             success = pessoal_manager.delete_nivel(nivel_id)
             if success:
                 flash('Nível excluído com sucesso!', 'success')
@@ -1487,7 +1487,7 @@ def nivel_details(nivel_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             nivel = pessoal_manager.get_nivel_by_id(nivel_id)
 
             if not nivel:
@@ -1518,7 +1518,7 @@ def export_niveis_excel():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             search_nome = request.args.get('nome_nivel')
             niveis_data = pessoal_manager.get_all_niveis(search_nome=search_nome)
 
@@ -1564,7 +1564,7 @@ def salarios_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             salarios = pessoal_manager.get_all_salarios(
                 search_cargo_id=int(search_cargo_id) if search_cargo_id else None,
@@ -1608,7 +1608,7 @@ def add_salario():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             all_cargos = pessoal_manager.get_all_cargos_for_dropdown()
             all_niveis = pessoal_manager.get_all_niveis_for_dropdown()
@@ -1703,7 +1703,7 @@ def edit_salario(salario_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             salario = pessoal_manager.get_salario_by_id(salario_id)
 
             if not salario:
@@ -1798,7 +1798,7 @@ def delete_salario(salario_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             success = pessoal_manager.delete_salario(salario_id)
             if success:
                 flash('Pacote salarial excluído com sucesso!', 'success')
@@ -1824,7 +1824,7 @@ def salario_details(salario_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             salario = pessoal_manager.get_salario_by_id(salario_id)
 
             if not salario:
@@ -1863,7 +1863,7 @@ def export_salarios_excel():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             search_cargo_id = request.args.get('cargo_id')
             search_nivel_id = request.args.get('nivel_id')
@@ -1942,7 +1942,7 @@ def ferias_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             ferias = pessoal_manager.get_all_ferias(
                 search_matricula=search_matricula,
@@ -1985,7 +1985,7 @@ def add_ferias():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             all_funcionarios = pessoal_manager.get_all_funcionarios()
             status_options = ['Programada', 'Aprovada', 'Gozo', 'Concluída', 'Cancelada']
@@ -2084,7 +2084,7 @@ def edit_ferias(ferias_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             all_funcionarios = pessoal_manager.get_all_funcionarios()
             status_options = ['Programada', 'Aprovada', 'Gozo', 'Concluída', 'Cancelada']
@@ -2197,7 +2197,7 @@ def delete_ferias(ferias_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             success = pessoal_manager.delete_ferias(ferias_id)
             if success:
                 flash('Registro de férias excluído com sucesso!', 'success')
@@ -2223,7 +2223,7 @@ def ferias_details(ferias_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             ferias = pessoal_manager.get_ferias_by_id(ferias_id)
 
             if not ferias:
@@ -2256,7 +2256,7 @@ def export_ferias_excel():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             search_matricula = request.args.get('matricula')
             search_status = request.args.get('status')
@@ -2344,7 +2344,7 @@ def dependentes_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             dependentes = pessoal_manager.get_all_dependentes(
                 search_matricula=search_matricula,
@@ -2391,7 +2391,7 @@ def add_dependente():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             all_funcionarios = pessoal_manager.get_all_funcionarios()
             parentesco_options = ['Filho(a)', 'Cônjuge', 'Pai', 'Mãe', 'Irmão(ã)', 'Outro']
@@ -2472,7 +2472,7 @@ def edit_dependente(dependente_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             all_funcionarios = pessoal_manager.get_all_funcionarios()
             parentesco_options = ['Filho(a)', 'Cônjuge', 'Pai', 'Mãe', 'Irmão(ã)', 'Outro']
@@ -2563,7 +2563,7 @@ def delete_dependente(dependente_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             success = pessoal_manager.delete_dependente(dependente_id)
             if success:
                 flash('Dependente excluído com sucesso!', 'success')
@@ -2589,7 +2589,7 @@ def dependente_details(dependente_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             dependente = pessoal_manager.get_dependente_by_id(dependente_id)
 
             if not dependente:
@@ -2623,7 +2623,7 @@ def export_dependentes_excel():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             search_matricula = request.args.get('matricula')
             search_nome = request.args.get('nome')
@@ -2696,7 +2696,7 @@ def pessoal_dashboard():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base) 
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) 
             status_counts = pessoal_manager.get_funcionario_status_counts()
             funcionarios_por_cargo = pessoal_manager.get_funcionarios_by_cargo()
             funcionarios_por_nivel = pessoal_manager.get_funcionarios_by_nivel()
@@ -2739,7 +2739,7 @@ def pessoal_aniversariantes():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             aniversariantes = pessoal_manager.get_aniversariantes_do_mes(mes=mes_atual)
 
@@ -2769,7 +2769,7 @@ def pessoal_experiencia_a_vencer():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             periodos_a_vencer = pessoal_manager.get_periodos_experiencia_a_vencer()
 
@@ -2798,7 +2798,7 @@ def pessoal_documentos_a_vencer():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             documentos_a_vencer = pessoal_manager.get_documentos_contratos_a_vencer(
                 dias_alerta_futuro=30,  
