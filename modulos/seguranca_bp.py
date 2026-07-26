@@ -114,8 +114,8 @@ def incidentes_acidentes_module():
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            obras_manager = ObrasManager(db_base)
-            pessoal_manager = PessoalManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             incidentes = seguranca_manager.get_all_incidentes_acidentes(
                 search_tipo=search_tipo,
@@ -163,8 +163,8 @@ def add_incidente_acidente():
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            obras_manager = ObrasManager(db_base)
-            pessoal_manager = PessoalManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             all_obras = obras_manager.get_all_obras_for_dropdown()
             all_funcionarios = pessoal_manager.get_all_funcionarios()
@@ -257,8 +257,8 @@ def edit_incidente_acidente(incidente_id):
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            obras_manager = ObrasManager(db_base)
-            pessoal_manager = PessoalManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             incidente_from_db = seguranca_manager.get_incidente_acidente_by_id(incidente_id)
             if not incidente_from_db:
@@ -549,7 +549,7 @@ def asos_module():
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             asos = seguranca_manager.get_all_asos(
                 search_matricula=search_matricula,
@@ -597,7 +597,7 @@ def add_aso():
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             all_funcionarios = pessoal_manager.get_all_funcionarios()
             tipo_aso_options = ['Admissional', 'Periódico', 'Mudança de Função', 'Retorno ao Trabalho', 'Demissional', 'Outro']
@@ -680,7 +680,7 @@ def edit_aso(aso_id):
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             aso_from_db = seguranca_manager.get_aso_by_id(aso_id)
             if not aso_from_db:
@@ -830,7 +830,7 @@ def export_asos_excel():
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             search_matricula = request.args.get('matricula')
             search_tipo = request.args.get('tipo_aso')
@@ -1262,7 +1262,7 @@ def seguranca_relatorio_treinamentos():
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             treinamentos_relatorio_data = seguranca_manager.get_treinamentos_para_relatorio(
                 search_nome_treinamento=search_nome_treinamento,
@@ -1324,7 +1324,7 @@ def treinamentos_agendamentos_module():
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # --- CORREÇÃO AQUI: INSTANCIAR PessoalManager ---
-            pessoal_manager = PessoalManager(db_base)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
             # --- FIM DA CORREÇÃO ---
 
             agendamentos = seguranca_manager.get_all_treinamentos_agendamentos(
@@ -1373,7 +1373,7 @@ def add_treinamento_agendamento():
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
-            pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) # Precisa instanciar aqui
 
             all_treinamentos = seguranca_manager.get_all_treinamentos_for_dropdown()
             status_agendamento_options = ['Programado', 'Realizado', 'Cancelado', 'Adiado']
@@ -1457,7 +1457,7 @@ def edit_treinamento_agendamento(agendamento_id):
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
-            pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) # Precisa instanciar aqui
 
             agendamento_from_db = seguranca_manager.get_treinamento_agendamento_by_id(agendamento_id)
             if not agendamento_from_db:
@@ -1693,7 +1693,7 @@ def treinamentos_participantes_module():
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
-            pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) # Precisa instanciar aqui
             all_funcionarios = pessoal_manager.get_all_funcionarios()
 
             participantes = seguranca_manager.get_all_treinamentos_participantes(
@@ -1740,7 +1740,7 @@ def add_treinamento_participante():
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
-            pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) # Precisa instanciar aqui
 
             all_agendamentos = seguranca_manager.get_all_agendamentos_for_dropdown()
             all_funcionarios = pessoal_manager.get_all_funcionarios() # Pegar de pessoal_manager
@@ -1832,7 +1832,7 @@ def edit_treinamento_participante(participante_id):
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
-            pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) # Precisa instanciar aqui
 
             participante_from_db = seguranca_manager.get_treinamento_participante_by_id(participante_id)
             if not participante_from_db:

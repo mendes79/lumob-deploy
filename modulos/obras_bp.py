@@ -55,7 +55,7 @@ def obras_dashboard():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base) 
+            obras_manager = ObrasManager(db_base, current_user.tenant_id) 
 
             status_counts_list = obras_manager.get_obra_status_counts()
             status_counts = {item['Status_Obra']: item['Count'] for item in status_counts_list}
@@ -121,7 +121,7 @@ def gerenciar_obras_lista():
             locale.setlocale(locale.LC_ALL, '')
 
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             obras = obras_manager.get_all_obras(
                 search_numero=search_numero,
@@ -180,7 +180,7 @@ def obras_relatorio_andamento():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             # Assume que este método já existe no db_obras_manager.py
             obras_andamento = obras_manager.get_obras_andamento_para_relatorio(
@@ -221,7 +221,7 @@ def add_obra():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             if request.method == 'POST':
                 id_contratos = int(request.form['id_contratos'])
@@ -252,6 +252,10 @@ def add_obra():
 
                 if obras_manager.get_obra_by_numero(numero_obra):
                     flash('Número da obra já existe. Por favor, use um número único.', 'danger')
+                    is_valid = False
+
+                if id_contratos and not obras_manager.get_contrato_by_id(id_contratos):
+                    flash('Contrato inválido.', 'danger')
                     is_valid = False
 
                 if not is_valid:
@@ -319,7 +323,7 @@ def edit_obra(obra_id):
     obra_from_db = None 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             
             obra_from_db = obras_manager.get_obra_by_id(obra_id)
             print(f"DEBUG_EDIT_OBRA: Obra do DB (original): {obra_from_db}")
@@ -407,6 +411,10 @@ def edit_obra(obra_id):
                     if existing_obra_by_numero and existing_obra_by_numero['ID_Obras'] != obra_id:
                         flash('Número da obra já existe. Por favor, use um número único.', 'danger')
                         is_valid = False
+
+                if id_contratos and not obras_manager.get_contrato_by_id(id_contratos):
+                    flash('Contrato inválido.', 'danger')
+                    is_valid = False
 
                 # --- SE HOUVER ERROS DE VALIDAÇÃO NO POST ---
                 if not is_valid:
@@ -509,7 +517,7 @@ def delete_obra(obra_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             success = obras_manager.delete_obra(obra_id)
             if success:
                 flash('Obra excluída com sucesso!', 'success')
@@ -535,7 +543,7 @@ def obra_details(obra_id): # O nome da função permanece o mesmo
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             obra = obras_manager.get_obra_by_id(obra_id)
 
             if not obra:
@@ -600,7 +608,7 @@ def export_obras_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             search_numero = request.args.get('numero_obra')
             search_nome = request.args.get('nome_obra')
@@ -674,7 +682,7 @@ def clientes_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base) 
+            obras_manager = ObrasManager(db_base, current_user.tenant_id) 
             clientes = obras_manager.get_all_clientes(
                 search_nome=search_nome,
                 search_cnpj=search_cnpj
@@ -705,7 +713,7 @@ def add_cliente():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             if request.method == 'POST':
                 nome_cliente = request.form['nome_cliente'].strip()
@@ -763,7 +771,7 @@ def edit_cliente(cliente_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             cliente = obras_manager.get_cliente_by_id(cliente_id)
 
             if not cliente:
@@ -829,7 +837,7 @@ def delete_cliente(cliente_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             success = obras_manager.delete_cliente(cliente_id)
             if success:
                 flash('Cliente excluído com sucesso!', 'success')
@@ -855,7 +863,7 @@ def cliente_details(cliente_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             cliente = obras_manager.get_cliente_by_id(cliente_id)
 
             if not cliente:
@@ -884,7 +892,7 @@ def export_clientes_excel():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             search_nome = request.args.get('nome_cliente')
             search_cnpj = request.args.get('cnpj_cliente')
@@ -950,7 +958,7 @@ def contratos_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             contratos = obras_manager.get_all_contratos(
                 search_numero=search_numero,
@@ -995,7 +1003,7 @@ def add_contrato():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             if request.method == 'POST':
                 id_clientes = int(request.form['id_clientes'])
@@ -1038,7 +1046,19 @@ def add_contrato():
 
                 if obras_manager.get_contrato_by_numero(numero_contrato):
                     flash('Número do contrato já existe. Por favor, use um número único.', 'danger')
-                    all_clientes = obras_manager.get_all_clientes() 
+                    all_clientes = obras_manager.get_all_clientes()
+                    status_options = ['Ativo', 'Pendente', 'Encerrado', 'Aditivado', 'Cancelado']
+                    return render_template(
+                        'obras/contratos/add_contrato.html',
+                        user=current_user,
+                        all_clientes=all_clientes,
+                        status_options=status_options,
+                        form_data=request.form
+                    )
+
+                if not obras_manager.get_cliente_by_id(id_clientes):
+                    flash('Cliente inválido.', 'danger')
+                    all_clientes = obras_manager.get_all_clientes()
                     status_options = ['Ativo', 'Pendente', 'Encerrado', 'Aditivado', 'Cancelado']
                     return render_template(
                         'obras/contratos/add_contrato.html',
@@ -1083,7 +1103,7 @@ def edit_contrato(contrato_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             contrato_from_db = obras_manager.get_contrato_by_id(contrato_id)
 
             if not contrato_from_db:
@@ -1150,6 +1170,17 @@ def edit_contrato(contrato_id):
                 observacoes = form_data_received.get('observacoes', '').strip()
                 prazo_contrato_dias = int(form_data_received.get('prazo_contrato_dias', 0))
 
+                if not obras_manager.get_cliente_by_id(id_clientes):
+                    flash('Cliente inválido.', 'danger')
+                    form_data_to_template = form_data_received
+                    return render_template(
+                        'obras/contratos/edit_contrato.html',
+                        user=current_user,
+                        contrato=form_data_to_template,
+                        all_clientes=all_clientes,
+                        status_options=status_options
+                    )
+
                 success = obras_manager.update_contrato(
                     contrato_id, id_clientes, numero_contrato, valor_contrato, data_assinatura_obj, 
                     data_ordem_inicio_obj, prazo_contrato_dias, # <-- Prazo_Contrato_Dias agora é pego do form
@@ -1203,7 +1234,7 @@ def delete_contrato(contrato_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             success = obras_manager.delete_contrato(contrato_id)
             if success:
                 flash('Contrato excluído com sucesso!', 'success')
@@ -1229,7 +1260,7 @@ def contrato_details(contrato_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             contrato = obras_manager.get_contrato_by_id(contrato_id)
 
             if not contrato:
@@ -1263,7 +1294,7 @@ def export_contratos_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             search_numero = request.args.get('numero_contrato')
             search_cliente_id = request.args.get('cliente_id')
@@ -1335,7 +1366,7 @@ def arts_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             arts = obras_manager.get_all_arts(
                 search_numero=search_numero,
@@ -1375,7 +1406,7 @@ def add_art():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             
             # --- CORRIGIDO AQUI: DEFINIR AS VARIÁVEIS PARA O DROPDOWN SEMPRE ---
             all_obras = obras_manager.get_all_obras_for_dropdown() # <-- MOVIDA PARA CÁ
@@ -1439,6 +1470,10 @@ def add_art():
                     flash('Número da ART já existe. Por favor, use um número único.', 'danger')
                     is_valid = False
 
+                if id_obras and not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
+                    is_valid = False
+
                 # --- SE ALGUMA VALIDAÇÃO FALHOU NO POST ---
                 if not is_valid:
                     form_data_to_template = form_data_received.copy() # Copia para repopular
@@ -1489,7 +1524,7 @@ def edit_art(art_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             art_from_db = obras_manager.get_art_by_id(art_id) # Renomeado para consistência
 
             if not art_from_db:
@@ -1543,6 +1578,10 @@ def edit_art(art_id):
                 existing_art = obras_manager.get_art_by_numero(numero_art)
                 if existing_art and existing_art['ID_Arts'] != art_id:
                     flash('Número da ART já existe. Por favor, use um número único.', 'danger')
+                    is_valid = False
+
+                if id_obras and not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
                     is_valid = False
 
                 # --- SE ALGUMA VALIDAÇÃO FALHOU NO POST ---
@@ -1618,7 +1657,7 @@ def delete_art(art_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             success = obras_manager.delete_art(art_id)
             if success:
                 flash('ART excluída com sucesso!', 'success')
@@ -1642,7 +1681,7 @@ def art_details(art_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             art = obras_manager.get_art_by_id(art_id)
 
             if not art:
@@ -1671,7 +1710,7 @@ def export_arts_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             search_numero = request.args.get('numero_art')
             search_obra_id = request.args.get('obra_id')
@@ -1741,7 +1780,7 @@ def medicoes_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             medicoes = obras_manager.get_all_medicoes(
                 search_numero_medicao=search_numero_medicao,
                 search_obra_id=search_obra_id,
@@ -1778,7 +1817,7 @@ def add_medicao():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             if request.method == 'POST':
                 id_obras = int(request.form['id_obras'])
@@ -1829,6 +1868,18 @@ def add_medicao():
                         form_data=request.form
                     )
 
+                if not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
+                    all_obras = obras_manager.get_all_obras_for_dropdown()
+                    status_options = ['Emitida', 'Aprovada', 'Paga', 'Rejeitada']
+                    return render_template(
+                        'obras/medicoes/add_medicao.html',
+                        user=current_user,
+                        all_obras=all_obras,
+                        status_options=status_options,
+                        form_data=request.form
+                    )
+
                 success = obras_manager.add_medicao(
                     id_obras, numero_medicao, valor_medicao, data_medicao, mes_referencia, data_aprovacao, status_medicao, observacao_medicao
                 )
@@ -1865,7 +1916,7 @@ def edit_medicao(medicao_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             medicao_from_db = obras_manager.get_medicao_by_id(medicao_id) # Renomeado para consistência
 
             if not medicao_from_db:
@@ -1946,6 +1997,10 @@ def edit_medicao(medicao_id):
                     flash('Já existe uma medição com este número para a obra selecionada. Use um número único.', 'danger')
                     is_valid = False
 
+                if id_obras and not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
+                    is_valid = False
+
                 # --- SE ALGUMA VALIDAÇÃO FALHOU NO POST ---
                 if not is_valid:
                     form_data_to_template = form_data_received.copy() # Copia para repopular
@@ -2016,7 +2071,7 @@ def delete_medicao(medicao_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             success = obras_manager.delete_medicao(medicao_id)
             if success:
                 flash('Medição excluída com sucesso!', 'success')
@@ -2040,7 +2095,7 @@ def medicao_details(medicao_id):
    
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             medicao = obras_manager.get_medicao_by_id(medicao_id)
 
             if not medicao:
@@ -2072,7 +2127,7 @@ def export_medicoes_excel():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             search_numero_medicao = request.args.get('numero_medicao')
             search_obra_id = request.args.get('obra_id')
@@ -2156,7 +2211,7 @@ def avancos_fisicos_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             avancos = obras_manager.get_all_avancos_fisicos(
                 search_obra_id=int(search_obra_id) if search_obra_id else None,
@@ -2193,7 +2248,7 @@ def add_avanco_fisico():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             all_obras = obras_manager.get_all_obras_for_dropdown()
             
             form_data_to_template = {} # Para repopular o formulário em caso de erro
@@ -2244,6 +2299,10 @@ def add_avanco_fisico():
                         is_valid = False
                 else:
                     flash('Obra é obrigatória.', 'danger')
+                    is_valid = False
+
+                if is_valid and not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
                     is_valid = False
 
                 # --- NOVA VALIDAÇÃO: NÃO PERMITIR AVANÇO ACUMULADO > 100% ---
@@ -2315,7 +2374,7 @@ def edit_avanco_fisico(avanco_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             avanco_from_db = obras_manager.get_avanco_fisico_by_id(avanco_id)
 
             if not avanco_from_db:
@@ -2372,6 +2431,10 @@ def edit_avanco_fisico(avanco_id):
                         is_valid = False
                 else:
                     flash('Obra é obrigatória.', 'danger')
+                    is_valid = False
+
+                if is_valid and not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
                     is_valid = False
 
                 # --- VALIDAÇÃO: NÃO PERMITIR AVANÇO ACUMULADO > 100% (EDITAR) ---
@@ -2460,7 +2523,7 @@ def delete_avanco_fisico(avanco_id):
   
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             success = obras_manager.delete_avanco_fisico(avanco_id)
             if success:
                 flash('Avanço Físico excluído com sucesso!', 'success')
@@ -2484,7 +2547,7 @@ def avanco_fisico_details(avanco_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             avanco = obras_manager.get_avanco_fisico_by_id(avanco_id)
 
             if not avanco:
@@ -2523,7 +2586,7 @@ def export_avancos_fisicos_excel():
    
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             search_obra_id = request.args.get('obra_id')
             search_data_inicio_str = request.args.get('data_inicio')
@@ -2598,7 +2661,7 @@ def get_acumulado_obra(obra_id, avanco_id_excluir=None):
     """
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             
             # Chama o método que já criamos no manager
             acumulado = obras_manager.get_avanco_acumulado_para_obra(obra_id, avanco_id_excluir)
@@ -2628,7 +2691,7 @@ def reidis_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             reidis = obras_manager.get_all_reidis(
                 search_numero_portaria=search_numero_portaria,
@@ -2669,7 +2732,7 @@ def add_reidi():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             # --- CORRIGIDO AQUI: DEFINIR AS VARIÁVEIS PARA O DROPDOWN SEMPRE ---
             all_obras = obras_manager.get_all_obras_for_dropdown() # <-- MOVIDA PARA CÁ
@@ -2739,6 +2802,16 @@ def add_reidi():
                 #        form_data=request.form
                 #    )
 
+                if not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
+                    return render_template(
+                        'obras/reidis/add_reidi.html',
+                        user=current_user,
+                        all_obras=all_obras,
+                        status_options=status_options,
+                        form_data=request.form
+                    )
+
                 success = obras_manager.add_reidi(
                     id_obras, numero_portaria, numero_ato_declaratorio, data_aprovacao_reidi, data_validade_reidi, status_reidi, observacoes_reidi
                 )
@@ -2772,7 +2845,7 @@ def edit_reidi(reidi_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             reidi_from_db = obras_manager.get_reidi_by_id(reidi_id) # Renomeado para evitar conflito
 
             if not reidi_from_db:
@@ -2819,6 +2892,10 @@ def edit_reidi(reidi_id):
 
                 if not all([numero_portaria, numero_ato_declaratorio, id_obras]):
                     flash('Campos obrigatórios (Número da Portaria, Número do Ato Declaratório, Obra) não podem ser vazios.', 'danger')
+                    is_valid = False
+
+                if id_obras and not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
                     is_valid = False
 
                 ## Unicidade dos números
@@ -2901,7 +2978,7 @@ def delete_reidi(reidi_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             success = obras_manager.delete_reidi(reidi_id)
             if success:
                 flash('REIDI excluído com sucesso!', 'success')
@@ -2925,7 +3002,7 @@ def reidi_details(reidi_id):
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             reidi = obras_manager.get_reidi_by_id(reidi_id)
 
             if not reidi:
@@ -2954,7 +3031,7 @@ def export_reidis_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             search_numero_portaria = request.args.get('numero_portaria')
             search_numero_ato = request.args.get('numero_ato')
@@ -3028,7 +3105,7 @@ def seguros_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             seguros = obras_manager.get_all_seguros(
                 search_numero_apolice=search_numero_apolice,
@@ -3076,7 +3153,7 @@ def add_seguro():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             
             # --- CORRIGIDO AQUI: DEFINIR AS VARIÁVEIS PARA O DROPDOWN SEMPRE ---
             all_obras = obras_manager.get_all_obras_for_dropdown() # <-- MOVIDA PARA CÁ
@@ -3142,6 +3219,17 @@ def add_seguro():
                         form_data=request.form
                     )
 
+                if not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
+                    return render_template(
+                        'obras/seguros/add_seguro.html',
+                        user=current_user,
+                        all_obras=all_obras,
+                        status_options=status_options,
+                        tipo_seguro_options=tipo_seguro_options,
+                        form_data=request.form
+                    )
+
                 success = obras_manager.add_seguro(
                     id_obras, numero_apolice, seguradora, tipo_seguro, valor_segurado, data_inicio_vigencia, data_fim_vigencia, status_seguro, observacoes_seguro
                 )
@@ -3177,7 +3265,7 @@ def edit_seguro(seguro_id):
    
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             seguro_from_db = obras_manager.get_seguro_by_id(seguro_id)
 
             if not seguro_from_db:
@@ -3241,6 +3329,10 @@ def edit_seguro(seguro_id):
                     flash('Número da Apólice já pertence a outro seguro.', 'danger')
                     is_valid = False
 
+                if id_obras and not obras_manager.get_obra_by_id(id_obras):
+                    flash('Obra inválida.', 'danger')
+                    is_valid = False
+
                 if not is_valid:
                     return render_template(
                         'obras/seguros/edit_seguro.html',
@@ -3302,7 +3394,7 @@ def delete_seguro(seguro_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             success = obras_manager.delete_seguro(seguro_id)
             if success:
                 flash('Seguro excluído com sucesso!', 'success')
@@ -3326,7 +3418,7 @@ def seguro_details(seguro_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
             seguro = obras_manager.get_seguro_by_id(seguro_id)
 
             if not seguro:
@@ -3360,7 +3452,7 @@ def export_seguros_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base)
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             search_numero_apolice = request.args.get('numero_apolice')
             search_obra_id = request.args.get('obra_id')
