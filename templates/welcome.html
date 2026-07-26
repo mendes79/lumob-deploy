@@ -31,14 +31,14 @@ content %}
       Mapeamento de Nome do Módulo para URL e Imagem #} {% if
       module_name_display == 'Obras' %} {% set module_url =
       url_for('obras_bp.obras_module') %} {% set module_image_file =
-      'obras_colorful.jpg' %} {% elif module_name_display == 'Segurança' %} {%
+      'obras_colorful.webp' %} {% elif module_name_display == 'Segurança' %} {%
       set module_url = url_for('seguranca_bp.seguranca_module') %} {% set
-      module_image_file = 'seguranca_colorful.jpg' %} {% elif
+      module_image_file = 'seguranca_colorful.webp' %} {% elif
       module_name_display == 'Pessoal' %} {% set module_url =
       url_for('pessoal_bp.pessoal_module') %} {% set module_image_file =
-      'pessoal_colorful.jpg' %} {% elif module_name_display == 'Usuários' %} {%
+      'pessoal_colorful.webp' %} {% elif module_name_display == 'Usuários' %} {%
       set module_url = url_for('users_bp.users_module') %} {% set
-      module_image_file = 'users_colorful.jpg' %} {% endif %}
+      module_image_file = 'users_colorful.webp' %} {% endif %}
 
       <div
         class="module-card {% if is_restricted %}module-card-restricted{% endif %}"
@@ -169,7 +169,9 @@ content %}
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    transition:
+      background-color 0.3s ease,
+      transform 0.2s ease;
     text-decoration: none;
   }
 
@@ -195,7 +197,9 @@ content %}
     position: relative;
     cursor: pointer;
     border: 1px solid transparent; /* Borda inicial transparente */
-    transition: transform 0.3s ease, box-shadow 0.3s ease,
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease,
       border-color 0.3s ease;
     display: flex;
     flex-direction: column;

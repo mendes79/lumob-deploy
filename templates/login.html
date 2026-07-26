@@ -83,8 +83,11 @@ content %}
     text-transform: lowercase;
     position: relative;
     z-index: 2;
-    transition: transform 0.8s ease-in-out, font-size 0.8s ease-in-out,
-      color 0.8s ease-in-out, text-shadow 0.8s ease-in-out;
+    transition:
+      transform 0.8s ease-in-out,
+      font-size 0.8s ease-in-out,
+      color 0.8s ease-in-out,
+      text-shadow 0.8s ease-in-out;
     white-space: nowrap;
   }
 
@@ -134,7 +137,9 @@ content %}
     z-index: 1000;
     opacity: 0;
     visibility: hidden; /* Controla a visibilidade, não apenas a opacidade */
-    transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    transition:
+      opacity 0.5s ease-out,
+      visibility 0.5s ease-out;
   }
 
   .modal-overlay.show {
@@ -176,8 +181,12 @@ content %}
     text-align: center;
     margin-bottom: 10px;
     font-size: 4rem;
-    text-shadow: -1px -1px 0 #ffffff5b, 1px -1px 0 #ffffff5b,
-      -1px 1px 0 #ffffff5b, 1px 1px 0 #ffffff5b, 3px 3px 6px rgba(0, 0, 0, 0.5);
+    text-shadow:
+      -1px -1px 0 #ffffff5b,
+      1px -1px 0 #ffffff5b,
+      -1px 1px 0 #ffffff5b,
+      1px 1px 0 #ffffff5b,
+      3px 3px 6px rgba(0, 0, 0, 0.5);
   }
 
   .modal-form-group {
@@ -208,7 +217,9 @@ content %}
     font-family: "Grandview", sans-serif;
     font-size: 0.9rem;
     outline: none;
-    transition: border-color 0.3s ease, background-color 0.3s ease,
+    transition:
+      border-color 0.3s ease,
+      background-color 0.3s ease,
       box-shadow 0.3s ease;
     box-shadow: 2px 2px 5px rgba(13, 13, 13, 0.3);
   }
@@ -237,7 +248,9 @@ content %}
     text-transform: lowercase;
     font-size: 0.9rem;
     cursor: pointer;
-    transition: background-color 0.3s ease, border-color 0.3s ease,
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
       box-shadow 0.3s ease;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
   }
@@ -267,7 +280,9 @@ content %}
     text-align: center;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+    transition:
+      opacity 0.3s ease-out,
+      visibility 0.3s ease-out;
   }
 
   .modal-error-message.show {
@@ -405,7 +420,7 @@ content %}
       randomImageBand.src = imageUrl;
     }
 
-    randomImageBand.src = '{{ url_for('static', filename='img/24.jpg') }}';
+    randomImageBand.src = '{{ url_for('static', filename='img/24.webp') }}';
 
     function displayModalError(message) {
         modalErrorMessageDiv.textContent = message;

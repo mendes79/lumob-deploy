@@ -14,6 +14,7 @@ __pycache__/
 *_bkp.py
 *.py.bkp
 *.mwb
+lumob-backups/
 
 # Arquivos de Sistema Operacional
 .DS_Store
@@ -25,3 +26,9 @@ Thumbs.db
 
 # Arquivos de Deploy
 *.zip
+
+# Arquivos das LLMs
+PLANO_MODERNIZACAO_*.md
+ABOUT.md
+dbs_lumob.md
+_tmp_schema_probe.py
