@@ -1,12 +1,13 @@
 # Criado em 2025-06-30 - Mendes Gemini Pro
 # database/db_seguranca_manager.py
+# rev01 - migração pra TenantScopedManager (isolamento por tenant_id)
 
 import mysql.connector
 from datetime import datetime, date
 
-class SegurancaManager:
-    def __init__(self, db_manager_instance):
-        self.db = db_manager_instance
+from database.db_base import TenantScopedManager
+
+class SegurancaManager(TenantScopedManager):
 
     def _format_date_fields(self, item):
         """
@@ -15,7 +16,7 @@ class SegurancaManager:
         """
         if item is None:
             return None
-        
+
         date_fields_to_format = [
             'Data_Criacao', 'Data_Modificacao',
             'Data_Hora_Ocorrencia', # Incidentes_Acidentes (DATETIME)
@@ -26,7 +27,7 @@ class SegurancaManager:
             'Data_Hora_Fim', # Treinamentos_Agendamentos (DATETIME)
             'Data_Conclusao' # Treinamentos_Participantes (DATE)
         ]
-        
+
         for key in date_fields_to_format:
             if key in item:
                 value = item[key]
@@ -60,7 +61,9 @@ class SegurancaManager:
         """
         Retorna uma lista de todos os incidentes/acidentes, opcionalmente filtrada.
         """
-        query = """
+        ia_clause, ia_param = self.tenant_clause('ia')
+        f_clause, f_param = self.tenant_clause('f')
+        query = f"""
             SELECT
                 ia.ID_Incidente_Acidente,
                 ia.Tipo_Registro,
@@ -85,10 +88,10 @@ class SegurancaManager:
             LEFT JOIN
                 obras o ON ia.ID_Obras = o.ID_Obras
             LEFT JOIN
-                funcionarios f ON ia.Responsavel_Investigacao_Funcionario_Matricula = f.Matricula
-            WHERE 1=1
+                funcionarios f ON ia.Responsavel_Investigacao_Funcionario_Matricula = f.Matricula AND {f_clause}
+            WHERE {ia_clause}
         """
-        params = []
+        params = [f_param, ia_param]
 
         if search_tipo:
             query += " AND ia.Tipo_Registro = %s"
@@ -102,7 +105,7 @@ class SegurancaManager:
         if search_responsavel_matricula:
             query += " AND ia.Responsavel_Investigacao_Funcionario_Matricula = %s"
             params.append(search_responsavel_matricula)
-        
+
         query += " ORDER BY ia.Data_Hora_Ocorrencia DESC"
 
         results = self.db.execute_query(query, tuple(params), fetch_results=True)
@@ -116,16 +119,16 @@ class SegurancaManager:
         """
         query = """
             INSERT INTO incidentes_acidentes (
-                Tipo_Registro, Data_Hora_Ocorrencia, Local_Ocorrencia, ID_Obras,
+                tenant_id, Tipo_Registro, Data_Hora_Ocorrencia, Local_Ocorrencia, ID_Obras,
                 Descricao_Resumida, Causas_Identificadas, Acoes_Corretivas_Tomadas,
                 Acoes_Preventivas_Recomendadas, Status_Registro, Responsavel_Investigacao_Funcionario_Matricula,
                 Data_Fechamento, Observacoes, Data_Criacao, Data_Modificacao
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
         params = (
-            tipo_registro, data_hora_ocorrencia, local_ocorrencia, id_obras,
-            descricao_resumida, causas_identificadas, acoes_corretivas_tomadas, # Corrigido o nome da variável aqui
+            self.tenant_id, tipo_registro, data_hora_ocorrencia, local_ocorrencia, id_obras,
+            descricao_resumida, causas_identificadas, acoes_corretivas_tomadas,
             acoes_preventivas_recomendadas, status_registro, responsavel_investigacao_matricula,
             data_fechamento, observacoes
         )
@@ -135,7 +138,9 @@ class SegurancaManager:
         """
         Retorna os dados de um incidente/acidente pelo ID.
         """
-        query = """
+        ia_clause, ia_param = self.tenant_clause('ia')
+        f_clause, f_param = self.tenant_clause('f')
+        query = f"""
             SELECT
                 ia.ID_Incidente_Acidente,
                 ia.Tipo_Registro,
@@ -160,10 +165,10 @@ class SegurancaManager:
             LEFT JOIN
                 obras o ON ia.ID_Obras = o.ID_Obras
             LEFT JOIN
-                funcionarios f ON ia.Responsavel_Investigacao_Funcionario_Matricula = f.Matricula
-            WHERE ia.ID_Incidente_Acidente = %s
+                funcionarios f ON ia.Responsavel_Investigacao_Funcionario_Matricula = f.Matricula AND {f_clause}
+            WHERE {ia_clause} AND ia.ID_Incidente_Acidente = %s
         """
-        result = self.db.execute_query(query, (incidente_id,), fetch_results=True)
+        result = self.db.execute_query(query, (f_param, ia_param, incidente_id), fetch_results=True)
         if result:
             return self._format_date_fields(result[0])
         return None
@@ -172,7 +177,8 @@ class SegurancaManager:
         """
         Atualiza os dados de um registro de incidente/acidente existente.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             UPDATE incidentes_acidentes
             SET
                 Tipo_Registro = %s,
@@ -188,13 +194,13 @@ class SegurancaManager:
                 Data_Fechamento = %s,
                 Observacoes = %s,
                 Data_Modificacao = NOW()
-            WHERE ID_Incidente_Acidente = %s
+            WHERE {clause} AND ID_Incidente_Acidente = %s
         """
         params = (
             tipo_registro, data_hora_ocorrencia, local_ocorrencia, id_obras,
             descricao_resumida, causas_identificadas, acoes_corretivas_tomadas,
             acoes_preventivas_recomendadas, status_registro, responsavel_investigacao_matricula,
-            data_fechamento, observacoes, incidente_id
+            data_fechamento, observacoes, tenant_param, incidente_id
         )
         return self.db.execute_query(query, params, fetch_results=False)
 
@@ -202,8 +208,9 @@ class SegurancaManager:
         """
         Exclui um registro de incidente/acidente do banco de dados.
         """
-        query = "DELETE FROM incidentes_acidentes WHERE ID_Incidente_Acidente = %s"
-        return self.db.execute_query(query, (incidente_id,), fetch_results=False)
+        clause, tenant_param = self.tenant_clause()
+        query = f"DELETE FROM incidentes_acidentes WHERE {clause} AND ID_Incidente_Acidente = %s"
+        return self.db.execute_query(query, (tenant_param, incidente_id), fetch_results=False)
 
     # --- Métodos de ASOs ---
     def get_all_asos(self, search_matricula=None, search_tipo=None, search_resultado=None, search_data_emissao_inicio=None, search_data_emissao_fim=None):
@@ -211,7 +218,9 @@ class SegurancaManager:
         Retorna uma lista de todos os ASOs, opcionalmente filtrada,
         incluindo informações do funcionário.
         """
-        query = """
+        a_clause, a_param = self.tenant_clause('a')
+        f_clause, f_param = self.tenant_clause('f')
+        query = f"""
             SELECT
                 a.ID_ASO,
                 a.Matricula_Funcionario,
@@ -227,10 +236,10 @@ class SegurancaManager:
             FROM
                 asos a
             LEFT JOIN
-                funcionarios f ON a.Matricula_Funcionario = f.Matricula
-            WHERE 1=1
+                funcionarios f ON a.Matricula_Funcionario = f.Matricula AND {f_clause}
+            WHERE {a_clause}
         """
-        params = []
+        params = [f_param, a_param]
 
         if search_matricula:
             query += " AND a.Matricula_Funcionario LIKE %s"
@@ -247,7 +256,7 @@ class SegurancaManager:
         if search_data_emissao_fim:
             query += " AND a.Data_Emissao <= %s"
             params.append(search_data_emissao_fim)
-        
+
         query += " ORDER BY a.Data_Emissao DESC, f.Nome_Completo"
 
         results = self.db.execute_query(query, tuple(params), fetch_results=True)
@@ -260,17 +269,19 @@ class SegurancaManager:
         Adiciona um novo registro de ASO ao banco de dados.
         """
         query = """
-            INSERT INTO asos (Matricula_Funcionario, Tipo_ASO, Data_Emissao, Data_Vencimento, Resultado, Medico_Responsavel, Observacoes, Data_Criacao, Data_Modificacao)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO asos (tenant_id, Matricula_Funcionario, Tipo_ASO, Data_Emissao, Data_Vencimento, Resultado, Medico_Responsavel, Observacoes, Data_Criacao, Data_Modificacao)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
-        params = (matricula_funcionario, tipo_aso, data_emissao, data_vencimento, resultado, medico_responsavel, observacoes)
+        params = (self.tenant_id, matricula_funcionario, tipo_aso, data_emissao, data_vencimento, resultado, medico_responsavel, observacoes)
         return self.db.execute_query(query, params, fetch_results=False)
 
     def get_aso_by_id(self, aso_id):
         """
         Retorna os dados de um registro de ASO pelo ID.
         """
-        query = """
+        a_clause, a_param = self.tenant_clause('a')
+        f_clause, f_param = self.tenant_clause('f')
+        query = f"""
             SELECT
                 a.ID_ASO,
                 a.Matricula_Funcionario,
@@ -286,10 +297,10 @@ class SegurancaManager:
             FROM
                 asos a
             LEFT JOIN
-                funcionarios f ON a.Matricula_Funcionario = f.Matricula
-            WHERE a.ID_ASO = %s
+                funcionarios f ON a.Matricula_Funcionario = f.Matricula AND {f_clause}
+            WHERE {a_clause} AND a.ID_ASO = %s
         """
-        result = self.db.execute_query(query, (aso_id,), fetch_results=True)
+        result = self.db.execute_query(query, (f_param, a_param, aso_id), fetch_results=True)
         if result:
             return self._format_date_fields(result[0])
         return None
@@ -298,7 +309,8 @@ class SegurancaManager:
         """
         Atualiza os dados de um registro de ASO existente.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             UPDATE asos
             SET
                 Matricula_Funcionario = %s,
@@ -309,24 +321,26 @@ class SegurancaManager:
                 Medico_Responsavel = %s,
                 Observacoes = %s,
                 Data_Modificacao = NOW()
-            WHERE ID_ASO = %s
+            WHERE {clause} AND ID_ASO = %s
         """
-        params = (matricula_funcionario, tipo_aso, data_emissao, data_vencimento, resultado, medico_responsavel, observacoes, aso_id)
+        params = (matricula_funcionario, tipo_aso, data_emissao, data_vencimento, resultado, medico_responsavel, observacoes, tenant_param, aso_id)
         return self.db.execute_query(query, params, fetch_results=False)
 
     def delete_aso(self, aso_id):
         """
         Exclui um registro de ASO do banco de dados.
         """
-        query = "DELETE FROM asos WHERE ID_ASO = %s"
-        return self.db.execute_query(query, (aso_id,), fetch_results=False)
+        clause, tenant_param = self.tenant_clause()
+        query = f"DELETE FROM asos WHERE {clause} AND ID_ASO = %s"
+        return self.db.execute_query(query, (tenant_param, aso_id), fetch_results=False)
 
  # --- NOVOS MÉTODOS DE TREINAMENTOS (Catálogo) ---
     def get_all_treinamentos(self, search_nome=None, search_tipo=None):
         """
         Retorna uma lista de todos os tipos de treinamento, opcionalmente filtrada.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             SELECT
                 ID_Treinamento,
                 Nome_Treinamento,
@@ -339,9 +353,9 @@ class SegurancaManager:
                 Data_Modificacao
             FROM
                 treinamentos
-            WHERE 1=1
+            WHERE {clause}
         """
-        params = []
+        params = [tenant_param]
 
         if search_nome:
             query += " AND Nome_Treinamento LIKE %s"
@@ -349,7 +363,7 @@ class SegurancaManager:
         if search_tipo:
             query += " AND Tipo_Treinamento = %s"
             params.append(search_tipo)
-        
+
         query += " ORDER BY Nome_Treinamento"
 
         results = self.db.execute_query(query, tuple(params), fetch_results=True)
@@ -362,17 +376,18 @@ class SegurancaManager:
         Adiciona um novo tipo de treinamento ao catálogo.
         """
         query = """
-            INSERT INTO treinamentos (Nome_Treinamento, Descricao, Carga_Horaria_Horas, Tipo_Treinamento, Validade_Dias, Instrutor_Responsavel, Data_Criacao, Data_Modificacao)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO treinamentos (tenant_id, Nome_Treinamento, Descricao, Carga_Horaria_Horas, Tipo_Treinamento, Validade_Dias, Instrutor_Responsavel, Data_Criacao, Data_Modificacao)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
-        params = (nome_treinamento, descricao, carga_horaria_horas, tipo_treinamento, validade_dias, instrutor_responsavel)
+        params = (self.tenant_id, nome_treinamento, descricao, carga_horaria_horas, tipo_treinamento, validade_dias, instrutor_responsavel)
         return self.db.execute_query(query, params, fetch_results=False)
 
     def get_treinamento_by_id(self, treinamento_id):
         """
         Retorna os dados de um tipo de treinamento pelo ID.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             SELECT
                 ID_Treinamento,
                 Nome_Treinamento,
@@ -385,9 +400,9 @@ class SegurancaManager:
                 Data_Modificacao
             FROM
                 treinamentos
-            WHERE ID_Treinamento = %s
+            WHERE {clause} AND ID_Treinamento = %s
         """
-        result = self.db.execute_query(query, (treinamento_id,), fetch_results=True)
+        result = self.db.execute_query(query, (tenant_param, treinamento_id), fetch_results=True)
         if result:
             return self._format_date_fields(result[0])
         return None
@@ -396,7 +411,8 @@ class SegurancaManager:
         """
         Atualiza os dados de um tipo de treinamento existente.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             UPDATE treinamentos
             SET
                 Nome_Treinamento = %s,
@@ -406,9 +422,9 @@ class SegurancaManager:
                 Validade_Dias = %s,
                 Instrutor_Responsavel = %s,
                 Data_Modificacao = NOW()
-            WHERE ID_Treinamento = %s
+            WHERE {clause} AND ID_Treinamento = %s
         """
-        params = (nome_treinamento, descricao, carga_horaria_horas, tipo_treinamento, validade_dias, instrutor_responsavel, treinamento_id)
+        params = (nome_treinamento, descricao, carga_horaria_horas, tipo_treinamento, validade_dias, instrutor_responsavel, tenant_param, treinamento_id)
         return self.db.execute_query(query, params, fetch_results=False)
 
     def delete_treinamento(self, treinamento_id):
@@ -416,21 +432,23 @@ class SegurancaManager:
         Exclui um tipo de treinamento do catálogo.
         Retorna False se houver agendamentos associados.
         """
-        check_query = "SELECT COUNT(*) AS count FROM treinamentos_agendamentos WHERE ID_Treinamento = %s"
-        result = self.db.execute_query(check_query, (treinamento_id,), fetch_results=True)
+        clause, tenant_param = self.tenant_clause()
+        check_query = f"SELECT COUNT(*) AS count FROM treinamentos_agendamentos WHERE {clause} AND ID_Treinamento = %s"
+        result = self.db.execute_query(check_query, (tenant_param, treinamento_id), fetch_results=True)
         if result and result[0]['count'] > 0:
             print(f"Não é possível excluir o treinamento ID {treinamento_id}: Existem agendamentos associados.")
             return False
 
-        query = "DELETE FROM treinamentos WHERE ID_Treinamento = %s"
-        return self.db.execute_query(query, (treinamento_id,), fetch_results=False)
+        query = f"DELETE FROM treinamentos WHERE {clause} AND ID_Treinamento = %s"
+        return self.db.execute_query(query, (tenant_param, treinamento_id), fetch_results=False)
 
     def get_treinamento_by_nome(self, nome_treinamento):
         """
         Verifica se um tipo de treinamento com o dado nome já existe.
         """
-        query = "SELECT ID_Treinamento FROM treinamentos WHERE Nome_Treinamento = %s"
-        result = self.db.execute_query(query, (nome_treinamento,), fetch_results=True)
+        clause, tenant_param = self.tenant_clause()
+        query = f"SELECT ID_Treinamento FROM treinamentos WHERE {clause} AND Nome_Treinamento = %s"
+        result = self.db.execute_query(query, (tenant_param, nome_treinamento), fetch_results=True)
         return result[0] if result else None
 
     # --- NOVOS MÉTODOS DE AGENDAMENTOS DE TREINAMENTOS ---
@@ -438,7 +456,8 @@ class SegurancaManager:
         """
         Retorna uma lista de todos os agendamentos de treinamentos, opcionalmente filtrada.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause('ta')
+        query = f"""
             SELECT
                 ta.ID_Agendamento,
                 ta.ID_Treinamento,
@@ -455,9 +474,9 @@ class SegurancaManager:
                 treinamentos_agendamentos ta
             LEFT JOIN
                 treinamentos t ON ta.ID_Treinamento = t.ID_Treinamento
-            WHERE 1=1
+            WHERE {clause}
         """
-        params = []
+        params = [tenant_param]
 
         if search_treinamento_id:
             query += " AND ta.ID_Treinamento = %s"
@@ -471,7 +490,7 @@ class SegurancaManager:
         if search_data_fim:
             query += " AND ta.Data_Hora_Fim <= %s"
             params.append(search_data_fim)
-        
+
         query += " ORDER BY ta.Data_Hora_Inicio DESC"
 
         results = self.db.execute_query(query, tuple(params), fetch_results=True)
@@ -484,17 +503,18 @@ class SegurancaManager:
         Adiciona um novo agendamento de treinamento.
         """
         query = """
-            INSERT INTO treinamentos_agendamentos (ID_Treinamento, Data_Hora_Inicio, Data_Hora_Fim, Local_Treinamento, Status_Agendamento, Observacoes, Data_Criacao, Data_Modificacao)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO treinamentos_agendamentos (tenant_id, ID_Treinamento, Data_Hora_Inicio, Data_Hora_Fim, Local_Treinamento, Status_Agendamento, Observacoes, Data_Criacao, Data_Modificacao)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
-        params = (id_treinamento, data_hora_inicio, data_hora_fim, local_treinamento, status_agendamento, observacoes)
+        params = (self.tenant_id, id_treinamento, data_hora_inicio, data_hora_fim, local_treinamento, status_agendamento, observacoes)
         return self.db.execute_query(query, params, fetch_results=False)
 
     def get_treinamento_agendamento_by_id(self, agendamento_id):
         """
         Retorna os dados de um agendamento de treinamento pelo ID.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause('ta')
+        query = f"""
             SELECT
                 ta.ID_Agendamento,
                 ta.ID_Treinamento,
@@ -511,9 +531,9 @@ class SegurancaManager:
                 treinamentos_agendamentos ta
             LEFT JOIN
                 treinamentos t ON ta.ID_Treinamento = t.ID_Treinamento
-            WHERE ta.ID_Agendamento = %s
+            WHERE {clause} AND ta.ID_Agendamento = %s
         """
-        result = self.db.execute_query(query, (agendamento_id,), fetch_results=True)
+        result = self.db.execute_query(query, (tenant_param, agendamento_id), fetch_results=True)
         if result:
             return self._format_date_fields(result[0])
         return None
@@ -522,7 +542,8 @@ class SegurancaManager:
         """
         Atualiza os dados de um agendamento de treinamento existente.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             UPDATE treinamentos_agendamentos
             SET
                 ID_Treinamento = %s,
@@ -532,9 +553,9 @@ class SegurancaManager:
                 Status_Agendamento = %s,
                 Observacoes = %s,
                 Data_Modificacao = NOW()
-            WHERE ID_Agendamento = %s
+            WHERE {clause} AND ID_Agendamento = %s
         """
-        params = (id_treinamento, data_hora_inicio, data_hora_fim, local_treinamento, status_agendamento, observacoes, agendamento_id)
+        params = (id_treinamento, data_hora_inicio, data_hora_fim, local_treinamento, status_agendamento, observacoes, tenant_param, agendamento_id)
         return self.db.execute_query(query, params, fetch_results=False)
 
     def delete_treinamento_agendamento(self, agendamento_id):
@@ -542,21 +563,24 @@ class SegurancaManager:
         Exclui um agendamento de treinamento.
         Retorna False se houver participantes associados.
         """
-        check_query = "SELECT COUNT(*) AS count FROM treinamentos_participantes WHERE ID_Agendamento = %s"
-        result = self.db.execute_query(check_query, (agendamento_id,), fetch_results=True)
+        clause, tenant_param = self.tenant_clause()
+        check_query = f"SELECT COUNT(*) AS count FROM treinamentos_participantes WHERE {clause} AND ID_Agendamento = %s"
+        result = self.db.execute_query(check_query, (tenant_param, agendamento_id), fetch_results=True)
         if result and result[0]['count'] > 0:
             print(f"Não é possível excluir o agendamento ID {agendamento_id}: Existem participantes associados.")
             return False
 
-        query = "DELETE FROM treinamentos_agendamentos WHERE ID_Agendamento = %s"
-        return self.db.execute_query(query, (agendamento_id,), fetch_results=False)
+        query = f"DELETE FROM treinamentos_agendamentos WHERE {clause} AND ID_Agendamento = %s"
+        return self.db.execute_query(query, (tenant_param, agendamento_id), fetch_results=False)
 
     # --- NOVOS MÉTODOS DE PARTICIPANTES DE TREINAMENTOS ---
     def get_all_treinamentos_participantes(self, search_agendamento_id=None, search_matricula=None, search_presenca=None):
         """
         Retorna uma lista de todos os participantes de treinamentos, opcionalmente filtrada.
         """
-        query = """
+        tp_clause, tp_param = self.tenant_clause('tp')
+        f_clause, f_param = self.tenant_clause('f')
+        query = f"""
             SELECT
                 tp.ID_Participante,
                 tp.ID_Agendamento,
@@ -577,10 +601,10 @@ class SegurancaManager:
             LEFT JOIN
                 treinamentos t ON ta.ID_Treinamento = t.ID_Treinamento
             LEFT JOIN
-                funcionarios f ON tp.Matricula_Funcionario = f.Matricula
-            WHERE 1=1
+                funcionarios f ON tp.Matricula_Funcionario = f.Matricula AND {f_clause}
+            WHERE {tp_clause}
         """
-        params = []
+        params = [f_param, tp_param]
 
         if search_agendamento_id:
             query += " AND tp.ID_Agendamento = %s"
@@ -591,7 +615,7 @@ class SegurancaManager:
         if search_presenca is not None: # Pode ser True ou False
             query += " AND tp.Presenca = %s"
             params.append(int(search_presenca)) # BOOLEAN em MySQL é 0 ou 1
-        
+
         query += " ORDER BY ta.Data_Hora_Inicio DESC, f.Nome_Completo"
 
         results = self.db.execute_query(query, tuple(params), fetch_results=True)
@@ -604,17 +628,19 @@ class SegurancaManager:
         Adiciona um novo participante a um agendamento de treinamento.
         """
         query = """
-            INSERT INTO treinamentos_participantes (ID_Agendamento, Matricula_Funcionario, Presenca, Nota_Avaliacao, Data_Conclusao, Certificado_Emitido, Data_Criacao, Data_Modificacao)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO treinamentos_participantes (tenant_id, ID_Agendamento, Matricula_Funcionario, Presenca, Nota_Avaliacao, Data_Conclusao, Certificado_Emitido, Data_Criacao, Data_Modificacao)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
-        params = (id_agendamento, matricula_funcionario, presenca, nota_avaliacao, data_conclusao, certificado_emitido)
+        params = (self.tenant_id, id_agendamento, matricula_funcionario, presenca, nota_avaliacao, data_conclusao, certificado_emitido)
         return self.db.execute_query(query, params, fetch_results=False)
 
     def get_treinamento_participante_by_id(self, participante_id):
         """
         Retorna os dados de um participante de treinamento pelo ID.
         """
-        query = """
+        tp_clause, tp_param = self.tenant_clause('tp')
+        f_clause, f_param = self.tenant_clause('f')
+        query = f"""
             SELECT
                 tp.ID_Participante,
                 tp.ID_Agendamento,
@@ -635,10 +661,10 @@ class SegurancaManager:
             LEFT JOIN
                 treinamentos t ON ta.ID_Treinamento = t.ID_Treinamento
             LEFT JOIN
-                funcionarios f ON tp.Matricula_Funcionario = f.Matricula
-            WHERE tp.ID_Participante = %s
+                funcionarios f ON tp.Matricula_Funcionario = f.Matricula AND {f_clause}
+            WHERE {tp_clause} AND tp.ID_Participante = %s
         """
-        result = self.db.execute_query(query, (participante_id,), fetch_results=True)
+        result = self.db.execute_query(query, (f_param, tp_param, participante_id), fetch_results=True)
         if result:
             return self._format_date_fields(result[0])
         return None
@@ -647,7 +673,8 @@ class SegurancaManager:
         """
         Atualiza os dados de um participante de treinamento existente.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             UPDATE treinamentos_participantes
             SET
                 ID_Agendamento = %s,
@@ -657,24 +684,26 @@ class SegurancaManager:
                 Data_Conclusao = %s,
                 Certificado_Emitido = %s,
                 Data_Modificacao = NOW()
-            WHERE ID_Participante = %s
+            WHERE {clause} AND ID_Participante = %s
         """
-        params = (id_agendamento, matricula_funcionario, presenca, nota_avaliacao, data_conclusao, certificado_emitido, participante_id)
+        params = (id_agendamento, matricula_funcionario, presenca, nota_avaliacao, data_conclusao, certificado_emitido, tenant_param, participante_id)
         return self.db.execute_query(query, params, fetch_results=False)
 
     def delete_treinamento_participante(self, participante_id):
         """
         Exclui um participante de treinamento.
         """
-        query = "DELETE FROM treinamentos_participantes WHERE ID_Participante = %s"
-        return self.db.execute_query(query, (participante_id,), fetch_results=False)
+        clause, tenant_param = self.tenant_clause()
+        query = f"DELETE FROM treinamentos_participantes WHERE {clause} AND ID_Participante = %s"
+        return self.db.execute_query(query, (tenant_param, participante_id), fetch_results=False)
 
     def get_participante_by_agendamento_funcionario(self, id_agendamento, matricula_funcionario, exclude_id=None):
         """
         Verifica se um funcionário já está registrado em um agendamento específico.
         """
-        query = "SELECT ID_Participante FROM treinamentos_participantes WHERE ID_Agendamento = %s AND Matricula_Funcionario = %s"
-        params = [id_agendamento, matricula_funcionario]
+        clause, tenant_param = self.tenant_clause()
+        query = f"SELECT ID_Participante FROM treinamentos_participantes WHERE {clause} AND ID_Agendamento = %s AND Matricula_Funcionario = %s"
+        params = [tenant_param, id_agendamento, matricula_funcionario]
         if exclude_id:
             query += " AND ID_Participante != %s"
             params.append(exclude_id)
@@ -684,30 +713,35 @@ class SegurancaManager:
     # --- Métodos auxiliares para dropdowns (já devem existir ou serão adicionados) ---
     def get_all_obras_for_dropdown(self): # Do ObrasManager, mas pode ser útil aqui se não tiver o ObrasManager importado
         """Retorna uma lista de obras para preencher dropdowns."""
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             SELECT
                 ID_Obras,
                 Numero_Obra,
                 Nome_Obra
             FROM
                 obras
+            WHERE {clause}
             ORDER BY Nome_Obra
         """
-        return self.db.execute_query(query, fetch_results=True)
+        return self.db.execute_query(query, (tenant_param,), fetch_results=True)
 
     def get_all_funcionarios_for_dropdown(self): # Do PessoalManager, mas pode ser útil aqui
         """Retorna uma lista de funcionários para preencher dropdowns."""
-        query = "SELECT Matricula, Nome_Completo FROM funcionarios ORDER BY Nome_Completo"
-        return self.db.execute_query(query, fetch_results=True)
-    
+        clause, tenant_param = self.tenant_clause()
+        query = f"SELECT Matricula, Nome_Completo FROM funcionarios WHERE {clause} ORDER BY Nome_Completo"
+        return self.db.execute_query(query, (tenant_param,), fetch_results=True)
+
     def get_all_treinamentos_for_dropdown(self):
         """Retorna uma lista de treinamentos para preencher dropdowns."""
-        query = "SELECT ID_Treinamento, Nome_Treinamento FROM treinamentos ORDER BY Nome_Treinamento"
-        return self.db.execute_query(query, fetch_results=True)
+        clause, tenant_param = self.tenant_clause()
+        query = f"SELECT ID_Treinamento, Nome_Treinamento FROM treinamentos WHERE {clause} ORDER BY Nome_Treinamento"
+        return self.db.execute_query(query, (tenant_param,), fetch_results=True)
 
     def get_all_agendamentos_for_dropdown(self):
         """Retorna uma lista de agendamentos para preencher dropdowns."""
-        query = """
+        clause, tenant_param = self.tenant_clause('ta')
+        query = f"""
             SELECT
                 ta.ID_Agendamento,
                 ta.Data_Hora_Inicio,
@@ -716,9 +750,10 @@ class SegurancaManager:
                 treinamentos_agendamentos ta
             JOIN
                 treinamentos t ON ta.ID_Treinamento = t.ID_Treinamento
+            WHERE {clause}
             ORDER BY ta.Data_Hora_Inicio DESC
         """
-        results = self.db.execute_query(query, fetch_results=True)
+        results = self.db.execute_query(query, (tenant_param,), fetch_results=True)
         # Formatar a data/hora para o dropdown
         if results:
             for item in results:
@@ -727,7 +762,7 @@ class SegurancaManager:
                 else:
                     item['Nome_Agendamento_Formatado'] = item['Nome_Treinamento']
         return results
-    
+
     # ==================================================================================================================================
     # === MÉTODOS PARA DASHBOARD E RELATÓRIOS DE SEGURANÇA =============================================================================
     # ==================================================================================================================================
@@ -737,18 +772,20 @@ class SegurancaManager:
         Retorna a contagem de incidentes/acidentes por tipo (Incidente vs Acidente).
         Ex: [{'Tipo_Registro': 'Incidente', 'Count': 10}, {'Tipo_Registro': 'Acidente', 'Count': 3}]
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             SELECT
                 Tipo_Registro,
                 COUNT(ID_Incidente_Acidente) AS Count
             FROM
                 incidentes_acidentes
+            WHERE {clause}
             GROUP BY
                 Tipo_Registro
             ORDER BY
                 Tipo_Registro
         """
-        results = self.db.execute_query(query, fetch_results=True)
+        results = self.db.execute_query(query, (tenant_param,), fetch_results=True)
         return results if results else []
 
     def get_incidentes_acidentes_counts_by_status(self):
@@ -756,18 +793,20 @@ class SegurancaManager:
         Retorna a contagem de incidentes/acidentes por status (Aberto, Concluído, etc.).
         Ex: [{'Status_Registro': 'Aberto', 'Count': 5}, {'Status_Registro': 'Concluído', 'Count': 8}]
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             SELECT
                 Status_Registro,
                 COUNT(ID_Incidente_Acidente) AS Count
             FROM
                 incidentes_acidentes
+            WHERE {clause}
             GROUP BY
                 Status_Registro
             ORDER BY
                 Status_Registro
         """
-        results = self.db.execute_query(query, fetch_results=True)
+        results = self.db.execute_query(query, (tenant_param,), fetch_results=True)
         return results if results else []
 
     def get_incidentes_acidentes_counts_by_month_year(self):
@@ -776,31 +815,35 @@ class SegurancaManager:
         Útil para gráficos de tendência ao longo do tempo.
         Ex: [{'AnoMes': '2024-01', 'Count': 2}, {'AnoMes': '2024-02', 'Count': 5}]
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             SELECT
                 DATE_FORMAT(Data_Hora_Ocorrencia, '%Y-%m') AS AnoMes,
                 COUNT(ID_Incidente_Acidente) AS Count
             FROM
                 incidentes_acidentes
+            WHERE {clause}
             GROUP BY
                 AnoMes
             ORDER BY
                 AnoMes
         """
-        results = self.db.execute_query(query, fetch_results=True)
+        results = self.db.execute_query(query, (tenant_param,), fetch_results=True)
         return results if results else []
 
     def get_total_incidentes_acidentes(self):
         """
         Retorna o número total de incidentes e acidentes registrados.
         """
-        query = """
+        clause, tenant_param = self.tenant_clause()
+        query = f"""
             SELECT
                 COUNT(ID_Incidente_Acidente) AS Total
             FROM
                 incidentes_acidentes
+            WHERE {clause}
         """
-        result = self.db.execute_query(query, fetch_results=True)
+        result = self.db.execute_query(query, (tenant_param,), fetch_results=True)
         return result[0]['Total'] if result and result[0]['Total'] is not None else 0
 
     # ----------------------------------------------------------------------------------------------------------------------------------
@@ -812,7 +855,9 @@ class SegurancaManager:
         LISTA APENAS TREINAMENTOS QUE POSSUEM AGENDAMENTOS OU PARTICIPANTES.
         Permite filtros por nome/tipo de treinamento, status do agendamento e matrícula do participante.
         """
-        query = """
+        t_clause, t_param = self.tenant_clause('t')
+        f_clause, f_param = self.tenant_clause('f')
+        query = f"""
             SELECT
                 t.ID_Treinamento,
                 t.Nome_Treinamento,
@@ -840,10 +885,10 @@ class SegurancaManager:
             LEFT JOIN   -- MANTIDO LEFT JOIN para participantes, pois um agendamento pode não ter participantes ainda
                 treinamentos_participantes tp ON ta.ID_Agendamento = tp.ID_Agendamento
             LEFT JOIN
-                funcionarios f ON tp.Matricula_Funcionario = f.Matricula
-            WHERE 1=1
+                funcionarios f ON tp.Matricula_Funcionario = f.Matricula AND {f_clause}
+            WHERE {t_clause}
         """
-        params = []
+        params = [f_param, t_param]
 
         if search_nome_treinamento:
             query += " AND t.Nome_Treinamento LIKE %s"
@@ -857,11 +902,10 @@ class SegurancaManager:
         if search_matricula_participante:
             query += " AND tp.Matricula_Funcionario = %s"
             params.append(search_matricula_participante)
-        
+
         query += " ORDER BY t.Nome_Treinamento, ta.Data_Hora_Inicio DESC, f.Nome_Completo"
 
         results = self.db.execute_query(query, tuple(params), fetch_results=True)
         if results:
             return [self._format_date_fields(item) for item in results]
         return results
-

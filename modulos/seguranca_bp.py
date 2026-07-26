@@ -37,7 +37,7 @@ def seguranca_module():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # Futuramente, você pode buscar dados relacionados à segurança aqui para um dashboard ou overview
             pass
 
@@ -68,7 +68,7 @@ def seguranca_dashboard():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
             total_incidentes_acidentes = seguranca_manager.get_total_incidentes_acidentes()
 
@@ -113,7 +113,7 @@ def incidentes_acidentes_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             obras_manager = ObrasManager(db_base)
             pessoal_manager = PessoalManager(db_base)
 
@@ -162,7 +162,7 @@ def add_incidente_acidente():
    
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             obras_manager = ObrasManager(db_base)
             pessoal_manager = PessoalManager(db_base)
 
@@ -256,7 +256,7 @@ def edit_incidente_acidente(incidente_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             obras_manager = ObrasManager(db_base)
             pessoal_manager = PessoalManager(db_base)
 
@@ -409,7 +409,7 @@ def delete_incidente_acidente(incidente_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             success = seguranca_manager.delete_incidente_acidente(incidente_id)
             if success:
                 flash('Registro de Incidente/Acidente excluído com sucesso!', 'success')
@@ -435,7 +435,7 @@ def incidente_acidente_details(incidente_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             incidente = seguranca_manager.get_incidente_acidente_by_id(incidente_id)
 
             if not incidente:
@@ -466,7 +466,7 @@ def export_incidentes_acidentes_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
             search_tipo = request.args.get('tipo_registro')
             search_status = request.args.get('status_registro')
@@ -548,7 +548,7 @@ def asos_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             pessoal_manager = PessoalManager(db_base)
 
             asos = seguranca_manager.get_all_asos(
@@ -596,7 +596,7 @@ def add_aso():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             pessoal_manager = PessoalManager(db_base)
 
             all_funcionarios = pessoal_manager.get_all_funcionarios()
@@ -679,7 +679,7 @@ def edit_aso(aso_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             pessoal_manager = PessoalManager(db_base)
 
             aso_from_db = seguranca_manager.get_aso_by_id(aso_id)
@@ -772,7 +772,7 @@ def delete_aso(aso_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             success = seguranca_manager.delete_aso(aso_id)
             if success:
                 flash('ASO excluído com sucesso!', 'success')
@@ -798,7 +798,7 @@ def aso_details(aso_id):
    
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             aso = seguranca_manager.get_aso_by_id(aso_id)
 
             if not aso:
@@ -829,7 +829,7 @@ def export_asos_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             pessoal_manager = PessoalManager(db_base)
 
             search_matricula = request.args.get('matricula')
@@ -902,7 +902,7 @@ def treinamentos_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
             treinamentos = seguranca_manager.get_all_treinamentos(
                 search_nome=search_nome,
@@ -938,7 +938,7 @@ def add_treinamento():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
             tipo_treinamento_options = ['Obrigatório', 'Reciclagem', 'Voluntário', 'Outro']
             form_data_to_template = {}
@@ -1007,7 +1007,7 @@ def edit_treinamento(treinamento_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
             treinamento_from_db = seguranca_manager.get_treinamento_by_id(treinamento_id)
             if not treinamento_from_db:
@@ -1139,7 +1139,7 @@ def delete_treinamento(treinamento_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             success = seguranca_manager.delete_treinamento(treinamento_id)
             if success:
                 flash('Treinamento excluído com sucesso!', 'success')
@@ -1167,7 +1167,7 @@ def treinamento_details(treinamento_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             treinamento = seguranca_manager.get_treinamento_by_id(treinamento_id)
 
             if not treinamento:
@@ -1198,7 +1198,7 @@ def export_treinamentos_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
             search_nome = request.args.get('nome_treinamento')
             search_tipo = request.args.get('tipo_treinamento')
@@ -1261,7 +1261,7 @@ def seguranca_relatorio_treinamentos():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             pessoal_manager = PessoalManager(db_base)
 
             treinamentos_relatorio_data = seguranca_manager.get_treinamentos_para_relatorio(
@@ -1322,7 +1322,7 @@ def treinamentos_agendamentos_module():
             data_fim = datetime.strptime(search_data_fim_str, '%Y-%m-%d').date()
 
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # --- CORREÇÃO AQUI: INSTANCIAR PessoalManager ---
             pessoal_manager = PessoalManager(db_base)
             # --- FIM DA CORREÇÃO ---
@@ -1370,7 +1370,7 @@ def add_treinamento_agendamento():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
             pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
@@ -1454,7 +1454,7 @@ def edit_treinamento_agendamento(agendamento_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
             pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
@@ -1548,7 +1548,7 @@ def delete_treinamento_agendamento(agendamento_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             success = seguranca_manager.delete_treinamento_agendamento(agendamento_id)
             if success:
                 flash('Agendamento de Treinamento excluído com sucesso!', 'success')
@@ -1576,7 +1576,7 @@ def treinamento_agendamento_details(agendamento_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             agendamento = seguranca_manager.get_treinamento_agendamento_by_id(agendamento_id)
             participantes = seguranca_manager.get_all_treinamentos_participantes(search_agendamento_id=agendamento_id)
 
@@ -1609,7 +1609,7 @@ def export_treinamentos_agendamentos_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
             search_treinamento_id = request.args.get('treinamento_id')
             search_status = request.args.get('status_agendamento')
@@ -1690,7 +1690,7 @@ def treinamentos_participantes_module():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
             pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
@@ -1737,7 +1737,7 @@ def add_treinamento_participante():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
             pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
@@ -1829,7 +1829,7 @@ def edit_treinamento_participante(participante_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # FIX: all_funcionarios estava sendo pego de seguranca_manager.get_all_funcionarios_for_dropdown()
             # que não existe. Deve ser de pessoal_manager.get_all_funcionarios().
             pessoal_manager = PessoalManager(db_base) # Precisa instanciar aqui
@@ -1931,7 +1931,7 @@ def delete_treinamento_participante(participante_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             success = seguranca_manager.delete_treinamento_participante(participante_id)
             if success:
                 flash('Participante excluído com sucesso!', 'success')
@@ -1957,7 +1957,7 @@ def treinamento_participante_details(participante_id):
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             participante = seguranca_manager.get_treinamento_participante_by_id(participante_id)
 
             if not participante:
@@ -1988,7 +1988,7 @@ def export_treinamentos_participantes_excel():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            seguranca_manager = SegurancaManager(db_base)
+            seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
             search_agendamento_id = request.args.get('agendamento_id')
             search_matricula = request.args.get('matricula')
