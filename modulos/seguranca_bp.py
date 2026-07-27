@@ -70,15 +70,12 @@ def seguranca_dashboard():
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
 
-            total_incidentes_acidentes = seguranca_manager.get_total_incidentes_acidentes()
-
-            type_counts_list = seguranca_manager.get_incidentes_acidentes_counts_by_type()
-            type_counts_dict = {item['Tipo_Registro']: item['Count'] for item in type_counts_list}
-
-            status_counts_list_from_db = seguranca_manager.get_incidentes_acidentes_counts_by_status()
+            kpis = seguranca_manager.get_dashboard_kpis()
+            total_incidentes_acidentes = kpis['total_incidentes_acidentes']
+            type_counts_list = kpis['type_counts']
+            status_counts_list_from_db = kpis['status_counts']
             status_counts_dict = {item['Status_Registro']: item['Count'] for item in status_counts_list_from_db}
-
-            monthly_counts = seguranca_manager.get_incidentes_acidentes_counts_by_month_year()
+            monthly_counts = kpis['monthly_counts']
 
             return render_template(
                 'seguranca/seguranca_dashboard.html',

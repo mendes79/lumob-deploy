@@ -2696,11 +2696,12 @@ def pessoal_dashboard():
 
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            pessoal_manager = PessoalManager(db_base, current_user.tenant_id) 
-            status_counts = pessoal_manager.get_funcionario_status_counts()
-            funcionarios_por_cargo = pessoal_manager.get_funcionarios_by_cargo()
-            funcionarios_por_nivel = pessoal_manager.get_funcionarios_by_nivel()
-            proximas_ferias = pessoal_manager.get_proximas_ferias(dias_antecedencia=60)
+            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
+            kpis = pessoal_manager.get_dashboard_kpis()
+            status_counts = kpis['status_counts']
+            funcionarios_por_cargo = kpis['funcionarios_por_cargo']
+            funcionarios_por_nivel = kpis['funcionarios_por_nivel']
+            proximas_ferias = kpis['proximas_ferias']
 
             return render_template(
                 'pessoal/pessoal_dashboard.html',

@@ -6,8 +6,15 @@ import mysql.connector
 from datetime import datetime, date
 
 from database.db_base import TenantScopedManager
+from database.cache_ext import cache
 
 class SegurancaManager(TenantScopedManager):
+
+    def _dashboard_cache_key(self):
+        return f"dash:seguranca:kpis:{self.tenant_id}"
+
+    def _invalidate_dashboard_cache(self):
+        cache.delete(self._dashboard_cache_key())
 
     def _format_date_fields(self, item):
         """
@@ -132,7 +139,10 @@ class SegurancaManager(TenantScopedManager):
             acoes_preventivas_recomendadas, status_registro, responsavel_investigacao_matricula,
             data_fechamento, observacoes
         )
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_incidente_acidente_by_id(self, incidente_id):
         """
@@ -202,7 +212,10 @@ class SegurancaManager(TenantScopedManager):
             acoes_preventivas_recomendadas, status_registro, responsavel_investigacao_matricula,
             data_fechamento, observacoes, tenant_param, incidente_id
         )
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def delete_incidente_acidente(self, incidente_id):
         """
@@ -210,7 +223,10 @@ class SegurancaManager(TenantScopedManager):
         """
         clause, tenant_param = self.tenant_clause()
         query = f"DELETE FROM incidentes_acidentes WHERE {clause} AND ID_Incidente_Acidente = %s"
-        return self.db.execute_query(query, (tenant_param, incidente_id), fetch_results=False)
+        result = self.db.execute_query(query, (tenant_param, incidente_id), fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     # --- Métodos de ASOs ---
     def get_all_asos(self, search_matricula=None, search_tipo=None, search_resultado=None, search_data_emissao_inicio=None, search_data_emissao_fim=None):
@@ -767,84 +783,55 @@ class SegurancaManager(TenantScopedManager):
     # === MÉTODOS PARA DASHBOARD E RELATÓRIOS DE SEGURANÇA =============================================================================
     # ==================================================================================================================================
 
-    def get_incidentes_acidentes_counts_by_type(self):
+    def get_dashboard_kpis(self):
         """
-        Retorna a contagem de incidentes/acidentes por tipo (Incidente vs Acidente).
-        Ex: [{'Tipo_Registro': 'Incidente', 'Count': 10}, {'Tipo_Registro': 'Acidente', 'Count': 3}]
+        KPIs do dashboard de Segurança em 3 round-trips (antes eram 4 — o total geral era
+        uma query redundante com a soma dos status), com cache por tenant (TTL 5 min,
+        invalidado nas escritas de incidentes/acidentes e ASOs).
         """
-        clause, tenant_param = self.tenant_clause()
-        query = f"""
-            SELECT
-                Tipo_Registro,
-                COUNT(ID_Incidente_Acidente) AS Count
-            FROM
-                incidentes_acidentes
-            WHERE {clause}
-            GROUP BY
-                Tipo_Registro
-            ORDER BY
-                Tipo_Registro
-        """
-        results = self.db.execute_query(query, (tenant_param,), fetch_results=True)
-        return results if results else []
+        cached = cache.get(self._dashboard_cache_key())
+        if cached is not None:
+            return cached
 
-    def get_incidentes_acidentes_counts_by_status(self):
+        type_clause, type_param = self.tenant_clause()
+        type_query = f"""
+            SELECT Tipo_Registro, COUNT(ID_Incidente_Acidente) AS Count
+            FROM incidentes_acidentes
+            WHERE {type_clause}
+            GROUP BY Tipo_Registro
+            ORDER BY Tipo_Registro
         """
-        Retorna a contagem de incidentes/acidentes por status (Aberto, Concluído, etc.).
-        Ex: [{'Status_Registro': 'Aberto', 'Count': 5}, {'Status_Registro': 'Concluído', 'Count': 8}]
-        """
-        clause, tenant_param = self.tenant_clause()
-        query = f"""
-            SELECT
-                Status_Registro,
-                COUNT(ID_Incidente_Acidente) AS Count
-            FROM
-                incidentes_acidentes
-            WHERE {clause}
-            GROUP BY
-                Status_Registro
-            ORDER BY
-                Status_Registro
-        """
-        results = self.db.execute_query(query, (tenant_param,), fetch_results=True)
-        return results if results else []
+        type_counts = self.db.execute_query(type_query, (type_param,), fetch_results=True) or []
 
-    def get_incidentes_acidentes_counts_by_month_year(self):
+        status_clause, status_param = self.tenant_clause()
+        status_query = f"""
+            SELECT Status_Registro, COUNT(ID_Incidente_Acidente) AS Count
+            FROM incidentes_acidentes
+            WHERE {status_clause}
+            GROUP BY Status_Registro
+            ORDER BY Status_Registro
         """
-        Retorna a contagem de incidentes/acidentes por mês e ano.
-        Útil para gráficos de tendência ao longo do tempo.
-        Ex: [{'AnoMes': '2024-01', 'Count': 2}, {'AnoMes': '2024-02', 'Count': 5}]
-        """
-        clause, tenant_param = self.tenant_clause()
-        query = f"""
-            SELECT
-                DATE_FORMAT(Data_Hora_Ocorrencia, '%Y-%m') AS AnoMes,
-                COUNT(ID_Incidente_Acidente) AS Count
-            FROM
-                incidentes_acidentes
-            WHERE {clause}
-            GROUP BY
-                AnoMes
-            ORDER BY
-                AnoMes
-        """
-        results = self.db.execute_query(query, (tenant_param,), fetch_results=True)
-        return results if results else []
+        status_counts = self.db.execute_query(status_query, (status_param,), fetch_results=True) or []
+        total_incidentes_acidentes = sum(item['Count'] for item in status_counts)
 
-    def get_total_incidentes_acidentes(self):
+        month_clause, month_param = self.tenant_clause()
+        month_query = f"""
+            SELECT DATE_FORMAT(Data_Hora_Ocorrencia, '%Y-%m') AS AnoMes, COUNT(ID_Incidente_Acidente) AS Count
+            FROM incidentes_acidentes
+            WHERE {month_clause}
+            GROUP BY AnoMes
+            ORDER BY AnoMes
         """
-        Retorna o número total de incidentes e acidentes registrados.
-        """
-        clause, tenant_param = self.tenant_clause()
-        query = f"""
-            SELECT
-                COUNT(ID_Incidente_Acidente) AS Total
-            FROM
-                incidentes_acidentes
-            WHERE {clause}
-        """
-        result = self.db.execute_query(query, (tenant_param,), fetch_results=True)
-        return result[0]['Total'] if result and result[0]['Total'] is not None else 0
+        monthly_counts = self.db.execute_query(month_query, (month_param,), fetch_results=True) or []
+
+        kpis = {
+            'total_incidentes_acidentes': total_incidentes_acidentes,
+            'type_counts': type_counts,
+            'status_counts': status_counts,
+            'monthly_counts': monthly_counts,
+        }
+        cache.set(self._dashboard_cache_key(), kpis, timeout=300)
+        return kpis
 
     # ----------------------------------------------------------------------------------------------------------------------------------
     # --- NOVO MÉTODO: Dados para Relatório de Treinamentos de Segurança ----------------------------------------------------------------

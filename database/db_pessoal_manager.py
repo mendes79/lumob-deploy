@@ -5,8 +5,15 @@ import mysql.connector
 from datetime import datetime, date, timedelta
 import pandas as pd
 from database.db_base import TenantScopedManager
+from database.cache_ext import cache
 
 class PessoalManager(TenantScopedManager):
+
+    def _dashboard_cache_key(self):
+        return f"dash:pessoal:kpis:{self.tenant_id}"
+
+    def _invalidate_dashboard_cache(self):
+        cache.delete(self._dashboard_cache_key())
 
     # ==================================================================================================================================
     # === MÉTODOS AUXILIARES GERAIS ====================================================================================================
@@ -141,7 +148,10 @@ class PessoalManager(TenantScopedManager):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         params = (self.tenant_id, matricula, nome_completo, data_admissao, id_cargos, id_niveis, status, tipo_contratacao)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_funcionario_by_matricula(self, matricula):
         """
@@ -191,13 +201,19 @@ class PessoalManager(TenantScopedManager):
             WHERE {clause} AND Matricula = %s
         """
         params = (new_matricula, nome_completo, data_admissao, id_cargos, id_niveis, status, tenant_param, old_matricula)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def delete_funcionario(self, matricula):
         """Exclui um funcionário pelo ID. ON DELETE CASCADE cuidará das tabelas relacionadas."""
         clause, tenant_param = self.tenant_clause()
         query = f"DELETE FROM funcionarios WHERE {clause} AND Matricula = %s"
-        return self.db.execute_query(query, (tenant_param, matricula), fetch_results=False)
+        result = self.db.execute_query(query, (tenant_param, matricula), fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     # ----------------------------------------------------------------------------------------------------------------------------------
     # --- MÉTODOS PARA DADOS PESSOAIS E DOCUMENTOS (TABELA 'funcionarios_documentos') --------------------------------------------------
@@ -780,7 +796,10 @@ class PessoalManager(TenantScopedManager):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
         params = (self.tenant_id, matricula_funcionario, periodo_aquisitivo_inicio, periodo_aquisitivo_fim, data_inicio_gozo, data_fim_gozo, dias_gozo, status_ferias, observacoes)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_ferias_by_id(self, ferias_id):
         """Retorna os dados de um registro de férias pelo ID."""
@@ -812,13 +831,19 @@ class PessoalManager(TenantScopedManager):
             WHERE {clause} AND ID_Ferias = %s
         """
         params = (matricula_funcionario, periodo_aquisitivo_inicio, periodo_aquisitivo_fim, data_inicio_gozo, data_fim_gozo, dias_gozo, status_ferias, observacoes, tenant_param, ferias_id)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def delete_ferias(self, ferias_id):
         """Exclui um registro de férias do banco de dados."""
         clause, tenant_param = self.tenant_clause()
         query = f"DELETE FROM ferias WHERE {clause} AND ID_Ferias = %s"
-        return self.db.execute_query(query, (tenant_param, ferias_id), fetch_results=False)
+        result = self.db.execute_query(query, (tenant_param, ferias_id), fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     # ==================================================================================================================================
     # === MÉTODOS DO SUBMÓDULO: DEPENDENTES ============================================================================================
@@ -920,6 +945,25 @@ class PessoalManager(TenantScopedManager):
     # ==================================================================================================================================
     # === MÉTODOS PARA DASHBOARD E RELATÓRIOS (MÓDULO PESSOAL) =========================================================================
     # ==================================================================================================================================
+
+    def get_dashboard_kpis(self):
+        """
+        KPIs do dashboard de Pessoal. Continuam 4 round-trips (são 4 agregações
+        genuinamente distintas, sem redundância a eliminar) mas agora com cache por
+        tenant (TTL 5 min, invalidado nas escritas de funcionários/férias).
+        """
+        cached = cache.get(self._dashboard_cache_key())
+        if cached is not None:
+            return cached
+
+        kpis = {
+            'status_counts': self.get_funcionario_status_counts(),
+            'funcionarios_por_cargo': self.get_funcionarios_by_cargo(),
+            'funcionarios_por_nivel': self.get_funcionarios_by_nivel(),
+            'proximas_ferias': self.get_proximas_ferias(dias_antecedencia=60),
+        }
+        cache.set(self._dashboard_cache_key(), kpis, timeout=300)
+        return kpis
 
     def get_funcionario_status_counts(self):
         """Retorna a contagem de funcionários por status."""
@@ -1051,105 +1095,47 @@ class PessoalManager(TenantScopedManager):
         """
         Retorna funcionários com períodos de experiência (30 ou 90 dias) próximos do vencimento
         (até 15 dias antes) ou recém-vencidos (até 7 dias depois).
-        Assume período de 90 dias total, com um primeiro vencimento opcional aos 30 dias.
+
+        Janela de filtro movida pro SQL (antes: SELECT de todos os funcionários ativos +
+        loop Python). Nota: com as janelas de alerta atuais (15 dias futuro / 7 dias passado,
+        largura 22 dias) e a distância de 60 dias entre os vencimentos de 30 e 90 dias, as duas
+        janelas nunca ficam ativas ao mesmo tempo pro mesmo funcionário — por isso a dedupe do
+        código anterior nunca era de fato alcançada; o UNION ALL abaixo não precisa reimplementá-la.
         """
-        hoje = date.today()
-
-        # Definindo as janelas de alerta conforme sua solicitação
-        alerta_futuro_dias = 15
-        alerta_passado_dias = 7
-
-        clause, tenant_param = self.tenant_clause('f')
+        clause_30, tenant_param_30 = self.tenant_clause('f')
+        clause_90, tenant_param_90 = self.tenant_clause('f')
         query = f"""
-            SELECT
-                f.Matricula,
-                f.Nome_Completo,
-                f.Data_Admissao,
-                c.Nome_Cargo,
-                f.Status
-            FROM
-                funcionarios f
-            LEFT JOIN
-                cargos c ON f.ID_Cargos = c.ID_Cargos
-            WHERE
-                {clause} AND
-                f.Status = 'Ativo' -- Apenas funcionários ativos
-            ORDER BY
-                f.Data_Admissao ASC
+            SELECT * FROM (
+                SELECT
+                    f.Matricula, f.Nome_Completo, f.Data_Admissao, c.Nome_Cargo, f.Status,
+                    DATE_ADD(f.Data_Admissao, INTERVAL 30 DAY) AS Data_Vencimento,
+                    '1º Período de Experiência (30 Dias)' AS Tipo_Vencimento
+                FROM funcionarios f
+                LEFT JOIN cargos c ON f.ID_Cargos = c.ID_Cargos
+                WHERE {clause_30} AND f.Status = 'Ativo'
+                    AND DATE_ADD(f.Data_Admissao, INTERVAL 30 DAY)
+                        BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND DATE_ADD(CURDATE(), INTERVAL 15 DAY)
+
+                UNION ALL
+
+                SELECT
+                    f.Matricula, f.Nome_Completo, f.Data_Admissao, c.Nome_Cargo, f.Status,
+                    DATE_ADD(f.Data_Admissao, INTERVAL 90 DAY) AS Data_Vencimento,
+                    '2º Período de Experiência (90 Dias - Fim)' AS Tipo_Vencimento
+                FROM funcionarios f
+                LEFT JOIN cargos c ON f.ID_Cargos = c.ID_Cargos
+                WHERE {clause_90} AND f.Status = 'Ativo'
+                    AND DATE_ADD(f.Data_Admissao, INTERVAL 90 DAY)
+                        BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND DATE_ADD(CURDATE(), INTERVAL 15 DAY)
+            ) AS alertas
+            ORDER BY Data_Vencimento
         """
+        alertas = self.db.execute_query(query, (tenant_param_30, tenant_param_90), fetch_results=True) or []
 
-        funcionarios = self.db.execute_query(query, (tenant_param,), fetch_results=True)
+        hoje = date.today()
+        for alerta in alertas:
+            alerta['Dias_Restantes'] = (alerta['Data_Vencimento'] - hoje).days
 
-        alertas = []
-        if funcionarios:
-            for func in funcionarios:
-                data_admissao = func['Data_Admissao']
-
-                if data_admissao:
-                    # Calcula as datas de vencimento dos períodos
-                    vencimento_30_dias = data_admissao + timedelta(days=30)
-                    vencimento_90_dias = data_admissao + timedelta(days=90)
-
-                    # Lógica para o 1º Período (30 Dias)
-                    # Alerta se estiver nos próximos 15 dias OU se venceu nos últimos 7 dias
-                    if (vencimento_30_dias >= hoje and vencimento_30_dias <= hoje + timedelta(days=alerta_futuro_dias)) or \
-                       (vencimento_30_dias < hoje and hoje <= vencimento_30_dias + timedelta(days=alerta_passado_dias)):
-
-                        # Adiciona o alerta apenas se o 2º período ainda não venceu, para evitar alertas de 30 dias de funcionários já no período de 90
-                        if hoje < vencimento_90_dias:
-                            alerta = func.copy()
-                            alerta['Tipo_Vencimento'] = '1º Período de Experiência (30 Dias)'
-                            alerta['Data_Vencimento'] = vencimento_30_dias
-                            alerta['Dias_Restantes'] = (vencimento_30_dias - hoje).days
-                            alertas.append(alerta)
-
-                    # Lógica para o 2º Período (90 Dias - Fim)
-                    # Alerta se estiver nos próximos 15 dias OU se venceu nos últimos 7 dias
-                    if (vencimento_90_dias >= hoje and vencimento_90_dias <= hoje + timedelta(days=alerta_futuro_dias)) or \
-                       (vencimento_90_dias < hoje and hoje <= vencimento_90_dias + timedelta(days=alerta_passado_dias)):
-
-                        # Evita duplicidade se o alerta de 30 e 90 dias caírem no mesmo "dias_alerta" para o mesmo funcionário
-                        # e garante que o alerta de 90 dias é o mais relevante se ambos se aplicarem
-                        # A lógica de desduplicação pode ser mais robusta se necessário, mas para este caso,
-                        # um simples 'if' para evitar o 30dias se o 90dias já está em alerta pode ser suficiente.
-                        # Ou podemos usar um set para garantir unicidade por (Matricula, Tipo_Vencimento)
-
-                        # Para evitar duplicatas e priorizar o alerta de 90 dias se ambos forem válidos
-                        # e caírem na mesma janela de alerta para o mesmo funcionário:
-                        # Se o alerta de 30 dias já foi adicionado para este funcionário, e o alerta de 90 dias é mais recente/relevante,
-                        # podemos substituir ou garantir que apenas um seja exibido.
-                        # Para simplicidade e seguindo a solicitação de "não poluir", vamos garantir que o alerta de 90 dias
-                        # seja o último a ser adicionado se ambos se aplicarem, e remover o de 30 dias se o de 90 dias for mais relevante.
-
-                        # Uma forma mais limpa de evitar duplicatas e priorizar o alerta de 90 dias:
-                        # Crie uma lista temporária para o funcionário atual e adicione o alerta de 90 dias.
-                        # Se o alerta de 30 dias já foi adicionado e o de 90 dias também se aplica,
-                        # o de 90 dias é geralmente mais crítico.
-
-                        # Para garantir que não haja alertas duplicados para o mesmo funcionário no mesmo tipo de vencimento
-                        # e que a prioridade seja o vencimento mais próximo ou o de 90 dias se ambos caírem na janela:
-
-                        # Verifica se já existe um alerta de 30 dias para este funcionário e se o alerta de 90 dias é mais iminente/relevante
-                        # (ex: se o de 90 dias está mais próximo de hoje do que o de 30 dias, ou se o de 30 dias já passou e o de 90 está na janela)
-
-                        # Uma abordagem mais simples para evitar poluição: se o 90 dias está na janela, apenas mostre ele.
-                        # Isso pode ser feito garantindo que o 30 dias só apareça se o 90 dias *não* estiver na janela de alerta.
-
-                        # Melhorando a lógica de exclusão/priorização:
-                        # Se o alerta de 90 dias está na janela, ele é o mais importante.
-                        # Remove qualquer alerta de 30 dias para o mesmo funcionário que possa ter sido adicionado antes.
-                        alertas = [a for a in alertas if not (a['Matricula'] == func['Matricula'] and a['Tipo_Vencimento'] == '1º Período de Experiência (30 Dias)')]
-
-                        alerta = func.copy()
-                        alerta['Tipo_Vencimento'] = '2º Período de Experiência (90 Dias - Fim)'
-                        alerta['Data_Vencimento'] = vencimento_90_dias
-                        alerta['Dias_Restantes'] = (vencimento_90_dias - hoje).days
-                        alertas.append(alerta)
-
-        # Opcional: Ordenar por Data_Vencimento para melhor visualização
-        alertas.sort(key=lambda x: x['Data_Vencimento'])
-
-        # Formata as datas no retorno
         return [self._format_date_fields(item) for item in alertas]
 
     # ----------------------------------------------------------------------------------------------------------------------------------

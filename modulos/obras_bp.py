@@ -55,19 +55,15 @@ def obras_dashboard():
     
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
-            obras_manager = ObrasManager(db_base, current_user.tenant_id) 
+            obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
-            status_counts_list = obras_manager.get_obra_status_counts()
-            status_counts = {item['Status_Obra']: item['Count'] for item in status_counts_list}
+            kpis = obras_manager.get_dashboard_kpis()
+            status_counts = kpis['status_counts']
+            total_obras_geral = kpis['total_obras_geral']
+            total_contratos_ativos = kpis['total_contratos_ativos']
+            total_medicoes_realizadas = kpis['total_medicoes_realizadas']
+            avg_avanco_fisico = kpis['avg_avanco_fisico']
 
-            # --- CORRIGIDO AQUI: CHAMAR O MÉTODO PARA OBTER A CONTAGEM TOTAL ---
-            total_obras_geral = obras_manager.get_total_obras_count()
-            # --- FIM DA CORREÇÃO ---
-
-            total_contratos_ativos = obras_manager.get_total_contratos_ativos_valor()
-            total_medicoes_realizadas = obras_manager.get_total_medicoes_realizadas_valor()
-            avg_avanco_fisico = obras_manager.get_avg_avanco_fisico_obras_ativas()
-            
             total_contratos_ativos_formatado = f"R$ {total_contratos_ativos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if total_contratos_ativos is not None else "R$ 0,00"
             total_medicoes_realizadas_formatado = f"R$ {total_medicoes_realizadas:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if total_medicoes_realizadas is not None else "R$ 0,00"
             avg_avanco_fisico_formatado = f"{avg_avanco_fisico:.2f}%" if avg_avanco_fisico is not None else "0.00%"

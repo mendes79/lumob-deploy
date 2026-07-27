@@ -1,13 +1,35 @@
 # database/db_base.py
 
+import logging
+import os
+
 import mysql.connector
-from mysql.connector import Error
+from mysql.connector import Error, pooling
+
+logger = logging.getLogger(__name__)
+
+_pool = None
+
+
+def init_pool(db_config):
+    """Inicializa o pool de conexões uma única vez, no startup do app."""
+    global _pool
+    _pool = pooling.MySQLConnectionPool(
+        pool_name="lumob_pool",
+        pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+        pool_reset_session=True,
+        host=db_config["host"],
+        database=db_config["database"],
+        user=db_config["user"],
+        password=db_config["password"],
+    )
+
 
 # 1. Definição da classe DatabaseManager
 class DatabaseManager:
     """
     Gerencia a conexão com o banco de dados MySQL e operações CRUD.
-    Utiliza context manager para garantir que a conexão seja fechada automaticamente.
+    Utiliza context manager para garantir que a conexão seja devolvida ao pool automaticamente.
     """
     def __init__(self, host, database, user, password):
         """Inicializa o gerenciador com as credenciais do banco de dados."""
@@ -18,27 +40,21 @@ class DatabaseManager:
         self.connection = None
 
     def __enter__(self):
-        """Estabelece a conexão com a conexão com o banco de dados ao entrar no bloco 'with'."""
+        """Obtém uma conexão do pool ao entrar no bloco 'with'."""
+        if _pool is None:
+            raise RuntimeError("Pool de conexões não inicializado — chame database.db_base.init_pool() no startup do app.")
         try:
-            self.connection = mysql.connector.connect(
-                host=self.host,
-                database=self.database,
-                user=self.user,
-                password=self.password
-            )
-            if self.connection.is_connected():
-                print(f"Conexão bem-sucedida ao banco de dados '{self.database}'!")
+            self.connection = _pool.get_connection()
             return self # Retorna a instância da classe para ser usada no 'as db_manager'
         except Error as e:
-            print(f"Erro ao conectar ao MySQL: {e}")
+            logger.error("Erro ao conectar ao MySQL: %s", e)
             self.connection = None # Garante que a conexão seja None se falhar
             raise # Re-lança a exceção para que o problema seja visível
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Fecha a conexão com o banco de dados ao sair do bloco 'with'."""
+        """Devolve a conexão ao pool ao sair do bloco 'with'."""
         if self.connection and self.connection.is_connected():
-            self.connection.close()
-            print("Conexão MySQL fechada.")
+            self.connection.close() # Com pool, isso devolve a conexão em vez de destruí-la
 
     def execute_query(self, query, params=None, fetch_results=True):
         """
@@ -49,7 +65,7 @@ class DatabaseManager:
         :return: Uma lista de dicionários (para SELECT) ou True/False (para outras operações).
         """
         if not self.connection or not self.connection.is_connected():
-            print("Erro: Nenhuma conexão ativa com o banco de dados.")
+            logger.error("Nenhuma conexão ativa com o banco de dados.")
             return None
 
         cursor = self.connection.cursor(dictionary=True)
@@ -63,7 +79,7 @@ class DatabaseManager:
                 self.connection.commit()
                 return True
         except Error as e:
-            print(f"Erro ao executar a consulta '{query}': {e}")
+            logger.error("Erro ao executar a consulta '%s': %s", query, e)
             self.connection.rollback()
             return False
         finally:

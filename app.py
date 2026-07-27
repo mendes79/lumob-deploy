@@ -16,6 +16,11 @@
 import os
 from dotenv import load_dotenv # Idem
 
+# Carrega variáveis de ambiente do .env ANTES de qualquer os.getenv() no módulo
+# (db_config abaixo depende disso — sem isso, DB_HOST etc. ficam None sob WSGI/gunicorn,
+# que nunca executa o bloco `if __name__ == '__main__':`)
+load_dotenv()
+
 from flask import Flask, render_template, redirect, url_for, request, flash, session, get_flashed_messages, jsonify # Adicionado jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import mysql.connector              # Para a classe Error do MySQL
@@ -28,7 +33,8 @@ import pandas as pd         # Adicione este import no topo do seu app.py
 from io import BytesIO      # Adicione este import no topo do seu app.py
 
 # Importações dos managers de banco de dados
-from database.db_base import DatabaseManager
+from database.db_base import DatabaseManager, init_pool
+from database.cache_ext import cache
 from database.db_user_manager import UserManager
 from database.db_tenant_manager import TenantManager
 # from database.db_hr_manager import HrManager # Para o módulo de RH/DP (mantido para estrutura) <<< ver se ainda precisa! Pode apagar!!!
@@ -59,6 +65,11 @@ db_config = { # <-- RESTAURADA AQUI COMO VARIÁVEL GLOBAL
     "password": os.getenv('DB_PASSWORD')
 }
 app.config['DB_CONFIG'] = db_config # Atribui a variável global a app.config
+
+init_pool(db_config) # Pool de conexões MySQL, inicializado uma única vez no startup
+
+app.config['CACHE_TYPE'] = os.getenv('CACHE_TYPE', 'SimpleCache')
+cache.init_app(app)
 
 
 # Disponibilizar date.today() como 'today' no ambiente Jinja2 para aniversariantes do mês
@@ -266,7 +277,5 @@ app.register_blueprint(obras_bp) # Registra o Blueprint do Módulo Obras
 app.register_blueprint(seguranca_bp)
 
 if __name__ == '__main__':
-    # Carrega variáveis de ambiente do arquivo .env
-    load_dotenv() # É boa prática carregar as variáveis de ambiente antes de usar osenv()
     app.run(debug=False) # Alterar para True quando for debugar apenas localmente, sem expor o app na rede.
     #app.run(host='0.0.0.0', port=5000, debug=True)

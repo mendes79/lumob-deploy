@@ -4,8 +4,15 @@ import mysql.connector
 from datetime import datetime, date
 
 from database.db_base import TenantScopedManager
+from database.cache_ext import cache
 
 class ObrasManager(TenantScopedManager):
+
+    def _dashboard_cache_key(self):
+        return f"dash:obras:kpis:{self.tenant_id}"
+
+    def _invalidate_dashboard_cache(self):
+        cache.delete(self._dashboard_cache_key())
 
     def _format_date_fields(self, item):
         """
@@ -117,7 +124,10 @@ class ObrasManager(TenantScopedManager):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
         params = (self.tenant_id, id_contratos, numero_obra, nome_obra, endereco_obra, escopo_obra, valor_obra, valor_aditivo_total, status_obra, data_inicio_prevista, data_fim_prevista)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_obra_by_id(self, obra_id):
         c_clause, c_param = self.tenant_clause('c')
@@ -196,12 +206,18 @@ class ObrasManager(TenantScopedManager):
             WHERE {clause} AND ID_Obras = %s
         """
         params = (id_contratos, numero_obra, nome_obra, endereco_obra, escopo_obra, valor_obra, valor_aditivo_total, status_obra, data_inicio_prevista, data_fim_prevista, tenant_param, obra_id)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def delete_obra(self, obra_id):
         clause, tenant_param = self.tenant_clause()
         query = f"DELETE FROM obras WHERE {clause} AND ID_Obras = %s"
-        return self.db.execute_query(query, (tenant_param, obra_id), fetch_results=False)
+        result = self.db.execute_query(query, (tenant_param, obra_id), fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_obra_by_numero(self, numero_obra):
         clause, tenant_param = self.tenant_clause()
@@ -387,7 +403,10 @@ class ObrasManager(TenantScopedManager):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
         params = (self.tenant_id, id_clientes, numero_contrato, valor_contrato, data_assinatura, data_ordem_inicio, prazo_contrato_dias, data_termino_previsto, status_contrato, observacoes)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_contrato_by_id(self, contrato_id):
         cl_clause, cl_param = self.tenant_clause('cl')
@@ -436,12 +455,18 @@ class ObrasManager(TenantScopedManager):
             WHERE {clause} AND ID_Contratos = %s
         """
         params = (id_clientes, numero_contrato, valor_contrato, data_assinatura, data_ordem_inicio, prazo_contrato_dias, data_termino_previsto, status_contrato, observacoes, tenant_param, contrato_id)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def delete_contrato(self, contrato_id):
         clause, tenant_param = self.tenant_clause()
         query = f"DELETE FROM contratos WHERE {clause} AND ID_Contratos = %s"
-        return self.db.execute_query(query, (tenant_param, contrato_id), fetch_results=False)
+        result = self.db.execute_query(query, (tenant_param, contrato_id), fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_contrato_by_numero(self, numero_contrato):
         clause, tenant_param = self.tenant_clause()
@@ -602,7 +627,10 @@ class ObrasManager(TenantScopedManager):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
         params = (self.tenant_id, id_obras, numero_medicao, valor_medicao, data_medicao, mes_referencia, data_aprovacao, status_medicao, observacao_medicao)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_medicao_by_id(self, medicao_id):
         o_clause, o_param = self.tenant_clause('o')
@@ -650,12 +678,18 @@ class ObrasManager(TenantScopedManager):
             WHERE {clause} AND ID_Medicoes = %s
         """
         params = (id_obras, numero_medicao, valor_medicao, data_medicao, mes_referencia, data_aprovacao, status_medicao, observacao_medicao, tenant_param, medicao_id)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def delete_medicao(self, medicao_id):
         clause, tenant_param = self.tenant_clause()
         query = f"DELETE FROM medicoes WHERE {clause} AND ID_Medicoes = %s"
-        return self.db.execute_query(query, (tenant_param, medicao_id), fetch_results=False)
+        result = self.db.execute_query(query, (tenant_param, medicao_id), fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_medicao_by_obra_numero(self, id_obras, numero_medicao):
         clause, tenant_param = self.tenant_clause()
@@ -708,7 +742,10 @@ class ObrasManager(TenantScopedManager):
             VALUES (%s, %s, %s, %s, NOW(), NOW())
         """
         params = (self.tenant_id, id_obras, percentual_avanco_fisico, data_avanco)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_avanco_fisico_by_id(self, avanco_id):
         o_clause, o_param = self.tenant_clause('o')
@@ -755,12 +792,18 @@ class ObrasManager(TenantScopedManager):
             WHERE {clause} AND ID_Avancos_Fisicos = %s
         """
         params = (id_obras, percentual_avanco_fisico, data_avanco, tenant_param, avanco_id)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def delete_avanco_fisico(self, avanco_id):
         clause, tenant_param = self.tenant_clause()
         query = f"DELETE FROM avancos_fisicos WHERE {clause} AND ID_Avancos_Fisicos = %s"
-        return self.db.execute_query(query, (tenant_param, avanco_id), fetch_results=False)
+        result = self.db.execute_query(query, (tenant_param, avanco_id), fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     # ----------------------------------------------------------------------------------------------------------------------------------
     # --- NOVO MÉTODO: Avanço Físico Acumulado para uma Obra --------------------------------------------------------------------------
@@ -794,22 +837,6 @@ class ObrasManager(TenantScopedManager):
     # ----------------------------------------------------------------------------------------------------------------------------------
     # --- NOVO MÉTODO: Contagem Total de Obras -----------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------------------
-    def get_total_obras_count(self):
-        """
-        Retorna a contagem total de obras registradas.
-        """
-        clause, tenant_param = self.tenant_clause()
-        query = f"""
-            SELECT
-                COUNT(ID_Obras) AS Total_Obras
-            FROM
-                obras
-            WHERE {clause}
-        """
-        result = self.db.execute_query(query, (tenant_param,), fetch_results=True)
-        # Retorna a contagem como int. Se não houver obras, retorna 0
-        return int(result[0]['Total_Obras']) if result and result[0]['Total_Obras'] is not None else 0
-
     # --- Métodos REIDIS ---
     def get_all_reidis(self, search_numero_portaria=None, search_numero_ato=None, search_obra_id=None, search_status=None):
         o_clause, o_param = self.tenant_clause('o')
@@ -1106,95 +1133,61 @@ class ObrasManager(TenantScopedManager):
             return [self._format_date_fields(item) for item in results]
         return []
 
-    def get_obra_status_counts(self):
+    def get_dashboard_kpis(self):
         """
-        Retorna a contagem de obras por status.
-        Ex: [{'Status_Obra': 'Em Andamento', 'Count': 5}, {'Status_Obra': 'Concluída', 'Count': 3}]
+        KPIs do dashboard de Obras em 2 round-trips (antes eram 5), com cache por tenant
+        (TTL 5 min, invalidado nas escritas de obras/contratos/medições/avanços físicos).
         """
-        clause, tenant_param = self.tenant_clause()
-        query = f"""
-            SELECT
-                Status_Obra,
-                COUNT(ID_Obras) AS Count
-            FROM
-                obras
-            WHERE
-                {clause}
-            GROUP BY
-                Status_Obra
-            ORDER BY
-                Status_Obra
-        """
-        results = self.db.execute_query(query, (tenant_param,), fetch_results=True)
-        # O método execute_query do db_base já deve retornar uma lista de dicionários.
-        # A chave 'Count' é o que precisamos. Jinja's 'sum' precisa ser ajustado.
-        return results if results else []
+        cached = cache.get(self._dashboard_cache_key())
+        if cached is not None:
+            return cached
 
-    def get_total_contratos_ativos_valor(self):
+        status_clause, status_param = self.tenant_clause()
+        status_query = f"""
+            SELECT Status_Obra, COUNT(ID_Obras) AS Count
+            FROM obras
+            WHERE {status_clause}
+            GROUP BY Status_Obra
+            ORDER BY Status_Obra
         """
-        Retorna o valor total dos contratos com status 'Ativo'.
-        """
-        clause, tenant_param = self.tenant_clause()
-        query = f"""
-            SELECT
-                SUM(Valor_Contrato) AS Total_Valor_Contratos
-            FROM
-                contratos
-            WHERE
-                {clause} AND Status_Contrato = 'Ativo'
-        """
-        result = self.db.execute_query(query, (tenant_param,), fetch_results=True)
-        return result[0]['Total_Valor_Contratos'] if result and result[0]['Total_Valor_Contratos'] is not None else 0.0
+        status_counts_list = self.db.execute_query(status_query, (status_param,), fetch_results=True) or []
+        total_obras_geral = sum(item['Count'] for item in status_counts_list)
 
-    def get_total_medicoes_realizadas_valor(self):
-        """
-        Retorna o valor total das medições realizadas (status 'Paga' ou 'Aprovada').
-        """
-        clause, tenant_param = self.tenant_clause()
-        query = f"""
-            SELECT
-                SUM(Valor_Medicao) AS Total_Valor_Medicoes
-            FROM
-                medicoes
-            WHERE
-                {clause} AND Status_Medicao IN ('Paga', 'Aprovada')
-        """
-        result = self.db.execute_query(query, (tenant_param,), fetch_results=True)
-        return result[0]['Total_Valor_Medicoes'] if result and result[0]['Total_Valor_Medicoes'] is not None else 0.0
-
-    def get_avg_avanco_fisico_obras_ativas(self):
-        """
-        Calcula o percentual médio de avanço físico para obras ativas.
-        Assume que a tabela 'avancos_fisicos' guarda o percentual de avanço de cada obra em determinada data,
-        e queremos o *último* avanço de cada obra ativa.
-        """
+        contratos_clause, contratos_param = self.tenant_clause()
+        medicoes_clause, medicoes_param = self.tenant_clause()
         af_clause, af_param = self.tenant_clause()
         o_clause, o_param = self.tenant_clause('o')
-        # Subquery para encontrar o último avanço físico para cada obra
-        subquery = f"""
+        agg_query = f"""
             SELECT
-                ID_Obras,
-                Percentual_Avanco_Fisico,
-                Data_Avanco,
-                ROW_NUMBER() OVER (PARTITION BY ID_Obras ORDER BY Data_Avanco DESC, Data_Criacao DESC) as rn
-            FROM
-                avancos_fisicos
-            WHERE
-                {af_clause}
+                (SELECT COALESCE(SUM(Valor_Contrato), 0) FROM contratos WHERE {contratos_clause} AND Status_Contrato = 'Ativo') AS Total_Valor_Contratos,
+                (SELECT COALESCE(SUM(Valor_Medicao), 0) FROM medicoes WHERE {medicoes_clause} AND Status_Medicao IN ('Paga', 'Aprovada')) AS Total_Valor_Medicoes,
+                (
+                    SELECT AVG(t1.Percentual_Avanco_Fisico)
+                    FROM (
+                        SELECT
+                            ID_Obras,
+                            Percentual_Avanco_Fisico,
+                            Data_Avanco,
+                            ROW_NUMBER() OVER (PARTITION BY ID_Obras ORDER BY Data_Avanco DESC, Data_Criacao DESC) AS rn
+                        FROM avancos_fisicos
+                        WHERE {af_clause}
+                    ) AS t1
+                    JOIN obras o ON t1.ID_Obras = o.ID_Obras AND {o_clause}
+                    WHERE t1.rn = 1 AND o.Status_Obra = 'Em Andamento'
+                ) AS Media_Avanco_Fisico
         """
-        # Query principal para calcular a média apenas das obras ativas
-        query = f"""
-            SELECT
-                AVG(t1.Percentual_Avanco_Fisico) AS Media_Avanco_Fisico
-            FROM
-                ({subquery}) AS t1
-            JOIN
-                obras o ON t1.ID_Obras = o.ID_Obras AND {o_clause}
-            WHERE
-                t1.rn = 1 AND o.Status_Obra = 'Em Andamento'
-        """
-        result = self.db.execute_query(query, (af_param, o_param), fetch_results=True)
-        return result[0]['Media_Avanco_Fisico'] if result and result[0]['Media_Avanco_Fisico'] is not None else 0.0
+        agg_result = self.db.execute_query(agg_query, (contratos_param, medicoes_param, af_param, o_param), fetch_results=True)
+        agg_row = agg_result[0] if agg_result else {}
+
+        kpis = {
+            'status_counts': {item['Status_Obra']: item['Count'] for item in status_counts_list},
+            'total_obras_geral': total_obras_geral,
+            'total_contratos_ativos': float(agg_row.get('Total_Valor_Contratos') or 0.0),
+            'total_medicoes_realizadas': float(agg_row.get('Total_Valor_Medicoes') or 0.0),
+            'avg_avanco_fisico': float(agg_row.get('Media_Avanco_Fisico') or 0.0),
+        }
+        cache.set(self._dashboard_cache_key(), kpis, timeout=300)
+        return kpis
 
     # ----------------------------------------------------------------------------------------------------------------------------------
     # --- NOVO MÉTODO: Dados para Relatório de Andamento de Obras ---------------------------------------------------------------------
