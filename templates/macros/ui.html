@@ -133,7 +133,7 @@
 </div>
 {% endmacro %}
 
-{% macro form_field(name, label, type='text', value='', required=False, placeholder=None, readonly=False) %}
+{% macro form_field(name, label, type='text', value='', required=False, placeholder=None, readonly=False, step=None) %}
 <div>
   <label for="{{ name }}" class="mb-1 block text-sm font-medium text-textprimary">
     {{ label }}{% if required %} <span class="text-rose-500">*</span>{% endif %}
@@ -142,9 +142,16 @@
   {% if type == 'textarea' %}
   <textarea id="{{ name }}" name="{{ name }}" {% if required %}required{% endif %} {% if readonly %}readonly{% endif %} class="{{ base_classes }}">{{ value }}</textarea>
   {% else %}
-  <input type="{{ type }}" id="{{ name }}" name="{{ name }}" value="{{ value }}" {% if required %}required{% endif %} {% if readonly %}readonly{% endif %} {% if placeholder %}placeholder="{{ placeholder }}"{% endif %} class="{{ base_classes }}" />
+  <input type="{{ type }}" id="{{ name }}" name="{{ name }}" value="{{ value }}" {% if required %}required{% endif %} {% if readonly %}readonly{% endif %} {% if placeholder %}placeholder="{{ placeholder }}"{% endif %} {% if step %}step="{{ step }}"{% endif %} class="{{ base_classes }}" />
   {% endif %}
 </div>
+{% endmacro %}
+
+{% macro form_checkbox(name, label, checked=False) %}
+<label class="flex items-center gap-2 text-sm font-medium text-textprimary">
+  <input type="checkbox" id="{{ name }}" name="{{ name }}" {% if checked %}checked{% endif %} class="h-4 w-4 rounded border-border text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" />
+  {{ label }}
+</label>
 {% endmacro %}
 
 {% macro form_select(name, label, options, selected='', required=False, placeholder='Selecione', value_attr=None, label_attr=None) %}
