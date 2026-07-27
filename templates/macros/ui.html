@@ -1,0 +1,82 @@
+{% macro kpi_card(title, value, icon='chart-bar', tone='info', trend=None) %}
+{% set tone_map = {
+  'info': 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+  'success': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  'warning': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  'danger': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+  'neutral': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+} %}
+<div class="rounded-2xl border border-border/60 bg-surface/80 p-5 shadow-sm backdrop-blur-md transition-transform hover:-translate-y-0.5">
+  <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl {{ tone_map.get(tone, tone_map['info']) }}">
+    <i class="fas fa-{{ icon }} text-lg"></i>
+  </div>
+  <p class="text-sm font-medium text-textmuted">{{ title }}</p>
+  <p class="mt-1 text-2xl font-semibold tracking-tight text-textprimary">{{ value }}</p>
+  {% if trend %}
+  <p class="mt-1 text-xs text-textmuted">{{ trend }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro flash_toasts() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="mb-6 space-y-2" role="status" aria-live="polite">
+  {% set tone_map = {
+    'success': 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+    'danger': 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300',
+    'warning': 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+    'info': 'border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300',
+  } %}
+  {% for category, message in messages %}
+  <div class="rounded-xl border px-4 py-3 text-sm font-medium shadow-sm {{ tone_map.get(category, tone_map['info']) }}">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+{% endmacro %}
+
+{% macro page_header(title, subtitle=None, icon=None) %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="flex items-center gap-2 text-xl font-semibold tracking-tight text-textprimary sm:text-2xl">
+      {% if icon %}<i class="fas fa-{{ icon }} text-textmuted"></i>{% endif %}
+      {{ title }}
+    </h1>
+    {% if subtitle %}
+    <p class="mt-1 text-sm text-textmuted">{{ subtitle }}</p>
+    {% endif %}
+  </div>
+  {% if caller %}
+  <div class="flex items-center gap-2">{{ caller() }}</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro nav_card(title, description, icon, url, disabled=False) %}
+{% if disabled %}
+<div class="group relative rounded-2xl border border-border/60 bg-surface/60 p-5 opacity-60">
+  <span class="absolute right-3 top-3 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+    Em breve
+  </span>
+  <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-500/10 text-slate-500 dark:text-slate-400">
+    <i class="fas fa-{{ icon }} text-lg"></i>
+  </div>
+  <h3 class="font-semibold text-textprimary">{{ title }}</h3>
+  <p class="mt-1 text-sm text-textmuted">{{ description }}</p>
+</div>
+{% else %}
+<a
+  href="{{ url }}"
+  class="group block rounded-2xl border border-border/60 bg-surface/80 p-5 shadow-sm backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+>
+  <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 transition-transform group-hover:scale-110 dark:text-indigo-400">
+    <i class="fas fa-{{ icon }} text-lg"></i>
+  </div>
+  <h3 class="font-semibold text-textprimary group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ title }}</h3>
+  <p class="mt-1 text-sm text-textmuted">{{ description }}</p>
+</a>
+{% endif %}
+{% endmacro %}

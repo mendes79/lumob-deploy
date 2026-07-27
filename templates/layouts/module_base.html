@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>{% block title %}LUMOB{% endblock %}</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+
+    {# Aplica o tema salvo ANTES do primeiro paint, evitando flash de tema errado #}
+    <script>
+      (function () {
+        var saved = localStorage.getItem("lumob-theme");
+        var theme =
+          saved ||
+          (window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light");
+        if (theme === "dark") {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "rgb(var(--lumob-bg) / <alpha-value>)",
+              surface: "rgb(var(--lumob-surface) / <alpha-value>)",
+              border: "rgb(var(--lumob-border) / <alpha-value>)",
+              textprimary: "rgb(var(--lumob-text) / <alpha-value>)",
+              textmuted: "rgb(var(--lumob-muted) / <alpha-value>)",
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      :root {
+        --lumob-bg: 248 250 252; /* slate-50 */
+        --lumob-surface: 255 255 255; /* white */
+        --lumob-border: 226 232 240; /* slate-200 */
+        --lumob-text: 15 23 42; /* slate-900 */
+        --lumob-muted: 100 116 139; /* slate-500 */
+      }
+      .dark {
+        --lumob-bg: 2 6 23; /* slate-950 */
+        --lumob-surface: 15 23 42; /* slate-900 */
+        --lumob-border: 30 41 59; /* slate-800 */
+        --lumob-text: 248 250 252; /* slate-50 */
+        --lumob-muted: 148 163 184; /* slate-400 */
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body
+    class="min-h-screen bg-background font-sans text-textprimary antialiased transition-colors"
+  >
+    <header
+      class="sticky top-0 z-40 border-b border-border/60 bg-surface/80 shadow-sm backdrop-blur-md"
+    >
+      <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div class="flex min-w-0 items-center gap-3">
+          <a
+            href="{{ url_for('welcome') }}"
+            class="flex shrink-0 items-center gap-2 rounded font-semibold tracking-tight text-textprimary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <i class="fas fa-cubes text-blue-600 dark:text-blue-400"></i>
+            <span>LUMOB</span>
+          </a>
+          <span class="text-textmuted" aria-hidden="true">/</span>
+          <a
+            href="{% block module_home_url %}{{ url_for('welcome') }}{% endblock %}"
+            class="flex min-w-0 items-center gap-2 truncate rounded font-semibold {% block module_accent %}text-textprimary{% endblock %} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <i class="fas fa-{% block module_icon %}th-large{% endblock %}"></i>
+            <span class="truncate">{% block module_name %}Módulo{% endblock %}</span>
+          </a>
+        </div>
+        <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+          {% block subnav %}{% endblock %}
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Alternar tema claro/escuro"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-textmuted transition-colors hover:bg-slate-100 hover:text-textprimary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:hover:bg-slate-800"
+          >
+            <i class="fas fa-moon dark:hidden"></i>
+            <i class="fas fa-sun hidden dark:inline"></i>
+          </button>
+          <span class="hidden items-center gap-2 text-sm text-textmuted sm:flex">
+            <i class="fas fa-user-circle"></i>
+            {{ current_user.username }}
+          </span>
+          <a
+            href="{{ url_for('logout') }}"
+            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:text-rose-400 dark:hover:bg-rose-950/40"
+          >
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="hidden sm:inline">Sair</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="border-t border-border/60 py-6 text-center text-xs text-textmuted">
+      &copy; 2026 LUMOB — Sistema de Gestão Interna
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
