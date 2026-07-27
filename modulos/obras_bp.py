@@ -1119,14 +1119,8 @@ def edit_contrato(contrato_id):
 
                 # Tentativas de conversão de datas (podem falhar e precisam de tratamento)
                 data_assinatura_obj = None
-                data_ordem_inicio_obj = None
-                data_termino_previsto_obj = None
                 is_valid = True
 
-                # ... (SUA LÓGICA DE VALIDAÇÃO DE DATAS, CAMPOS E UNICIDADE AQUI) ...
-                # Certifique-se de que se alguma validação falhar, 'is_valid' se torna False
-
-                # Exemplo da sua validação de data_assinatura:
                 data_assinatura_str = form_data_received.get('data_assinatura', '').strip()
                 if data_assinatura_str:
                     try:
@@ -1137,18 +1131,24 @@ def edit_contrato(contrato_id):
                 else:
                     flash('Data de Assinatura é obrigatória.', 'danger')
                     is_valid = False
-                # Repita para data_ordem_inicio_str, data_termino_previsto_str, valor_contrato, etc.
+
+                data_ordem_inicio_str = form_data_received.get('data_ordem_inicio', '').strip()
+                data_termino_previsto_str = form_data_received.get('data_termino_previsto', '').strip()
+                try:
+                    data_ordem_inicio_obj = datetime.strptime(data_ordem_inicio_str, '%Y-%m-%d').date() if data_ordem_inicio_str else None
+                    data_termino_previsto_obj = datetime.strptime(data_termino_previsto_str, '%Y-%m-%d').date() if data_termino_previsto_str else None
+                except ValueError:
+                    flash('Formato de data inválido. Use AAAA-MM-DD.', 'danger')
+                    is_valid = False
 
                 # Se alguma validação falhou, passamos os dados recebidos para re-preencher o form
                 if not is_valid:
                     form_data_to_template = form_data_received # Repopula com os dados que o usuário digitou
+                    form_data_to_template['ID_Contratos'] = contrato_id
                     # Assegura que datas que vieram do form e são válidas, sejam passadas como string para o input
                     form_data_to_template['data_assinatura'] = data_assinatura_str
                     form_data_to_template['data_ordem_inicio'] = data_ordem_inicio_str
                     form_data_to_template['data_termino_previsto'] = data_termino_previsto_str
-                    
-                    # Garante que campos numericos também sejam string para o template, se a validação falhou
-                    # form_data_to_template['valor_contrato'] = form_data_to_template.get('valor_contrato', '')
 
                     return render_template(
                         'obras/contratos/edit_contrato.html',
@@ -1169,6 +1169,7 @@ def edit_contrato(contrato_id):
                 if not obras_manager.get_cliente_by_id(id_clientes):
                     flash('Cliente inválido.', 'danger')
                     form_data_to_template = form_data_received
+                    form_data_to_template['ID_Contratos'] = contrato_id
                     return render_template(
                         'obras/contratos/edit_contrato.html',
                         user=current_user,
