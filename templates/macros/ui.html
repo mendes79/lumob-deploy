@@ -169,3 +169,17 @@
   </select>
 </div>
 {% endmacro %}
+
+{% macro funcionario_select(name, all_funcionarios, selected='', required=False, placeholder='Selecione um Funcionário', label='Funcionário') %}
+<div>
+  <label for="{{ name }}" class="mb-1 block text-sm font-medium text-textprimary">
+    {{ label }}{% if required %} <span class="text-rose-500">*</span>{% endif %}
+  </label>
+  <select id="{{ name }}" name="{{ name }}" {% if required %}required{% endif %} class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-textprimary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+    {% if placeholder %}<option value="">{{ placeholder }}</option>{% endif %}
+    {% for func in all_funcionarios %}
+    <option value="{{ func.Matricula }}" {% if func.Matricula|string == selected|string %}selected{% endif %}>{{ func.Matricula }} - {{ func.Nome_Completo }}</option>
+    {% endfor %}
+  </select>
+</div>
+{% endmacro %}
