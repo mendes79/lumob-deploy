@@ -80,3 +80,85 @@
 </a>
 {% endif %}
 {% endmacro %}
+
+{% macro status_badge(label, tone='neutral') %}
+{% set tone_map = {
+  'info': 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+  'success': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  'warning': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  'danger': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+  'neutral': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+} %}
+<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ tone_map.get(tone, tone_map['neutral']) }}">{{ label }}</span>
+{% endmacro %}
+
+{% macro detail_card(title) %}
+<div class="mb-6 rounded-2xl border border-border/60 bg-surface/80 p-5 shadow-sm backdrop-blur-md sm:p-6">
+  <h2 class="mb-4 text-base font-semibold text-textprimary">{{ title }}</h2>
+  <dl>{{ caller() }}</dl>
+</div>
+{% endmacro %}
+
+{% macro detail_row(label, value) %}
+<div class="flex flex-col gap-1 border-b border-border/60 py-2 last:border-b-0 sm:flex-row sm:items-baseline sm:gap-4">
+  <dt class="w-48 shrink-0 text-sm font-medium text-textmuted">{{ label }}</dt>
+  <dd class="text-sm text-textprimary">{{ value }}</dd>
+</div>
+{% endmacro %}
+
+{% macro data_table(headers) %}
+<div class="overflow-x-auto rounded-2xl border border-border/60 bg-surface/80 shadow-sm backdrop-blur-md">
+  <table class="min-w-full divide-y divide-border text-sm">
+    <thead>
+      <tr class="text-left text-xs font-semibold uppercase tracking-wide text-textmuted">
+        {% for h in headers %}<th class="whitespace-nowrap px-4 py-3">{{ h }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-border">
+      {{ caller() }}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% macro empty_state(title, description=None, icon='inbox') %}
+<div class="flex flex-col items-center justify-center rounded-2xl border border-border/60 bg-surface/80 px-6 py-16 text-center shadow-sm backdrop-blur-md">
+  <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-500/10 text-slate-400">
+    <i class="fas fa-{{ icon }} text-2xl"></i>
+  </div>
+  <p class="font-medium text-textprimary">{{ title }}</p>
+  {% if description %}
+  <p class="mt-1 text-sm text-textmuted">{{ description }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro form_field(name, label, type='text', value='', required=False, placeholder=None, readonly=False) %}
+<div>
+  <label for="{{ name }}" class="mb-1 block text-sm font-medium text-textprimary">
+    {{ label }}{% if required %} <span class="text-rose-500">*</span>{% endif %}
+  </label>
+  {% set base_classes = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-textprimary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500' + (' opacity-60' if readonly else '') %}
+  {% if type == 'textarea' %}
+  <textarea id="{{ name }}" name="{{ name }}" {% if required %}required{% endif %} {% if readonly %}readonly{% endif %} class="{{ base_classes }}">{{ value }}</textarea>
+  {% else %}
+  <input type="{{ type }}" id="{{ name }}" name="{{ name }}" value="{{ value }}" {% if required %}required{% endif %} {% if readonly %}readonly{% endif %} {% if placeholder %}placeholder="{{ placeholder }}"{% endif %} class="{{ base_classes }}" />
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro form_select(name, label, options, selected='', required=False, placeholder='Selecione', value_attr=None, label_attr=None) %}
+<div>
+  <label for="{{ name }}" class="mb-1 block text-sm font-medium text-textprimary">
+    {{ label }}{% if required %} <span class="text-rose-500">*</span>{% endif %}
+  </label>
+  <select id="{{ name }}" name="{{ name }}" {% if required %}required{% endif %} class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-textprimary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+    {% if placeholder %}<option value="">{{ placeholder }}</option>{% endif %}
+    {% for opt in options %}
+    {% set val = opt[value_attr] if value_attr is not none else opt %}
+    {% set lbl = opt[label_attr] if label_attr is not none else opt %}
+    <option value="{{ val }}" {% if val|string == selected|string %}selected{% endif %}>{{ lbl }}</option>
+    {% endfor %}
+  </select>
+</div>
+{% endmacro %}
