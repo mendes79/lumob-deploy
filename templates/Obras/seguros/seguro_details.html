@@ -21,8 +21,8 @@
 {{ detail_row('Valor Segurado', seguro.Valor_Segurado_Formatado|default('N/A')) }}
 {{ detail_row('Data Início Vigência', seguro.Data_Inicio_Vigencia.strftime('%d/%m/%Y') if seguro.Data_Inicio_Vigencia else 'N/A') }}
 {{ detail_row('Data Fim Vigência', seguro.Data_Fim_Vigencia.strftime('%d/%m/%Y') if seguro.Data_Fim_Vigencia else 'N/A') }}
-{{ detail_row('Status do Seguro', status_badge(seguro.Status_Seguro|default('N/A'), status_tone.get(seguro.Status_Seguro, 'neutral'))) }}
-{{ detail_row('Observações', seguro.Observacoes_Seguro|default('N/A')) }}
+{{ detail_row('Status do Seguro', status_badge(seguro.Status_Seguro or 'N/A', status_tone.get(seguro.Status_Seguro, 'neutral'))) }}
+{{ detail_row('Observações', seguro.Observacoes_Seguro or 'N/A') }}
 {% endcall %}
 
 <div class="flex flex-wrap justify-end gap-2">

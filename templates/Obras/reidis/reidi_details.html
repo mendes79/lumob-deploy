@@ -19,8 +19,8 @@
 {{ detail_row('Obra Associada', (reidi.Numero_Obra ~ ' - ' ~ reidi.Nome_Obra) if reidi.Numero_Obra else 'N/A') }}
 {{ detail_row('Data de Aprovação', reidi.Data_Aprovacao_Reidi.strftime('%d/%m/%Y') if reidi.Data_Aprovacao_Reidi else 'N/A') }}
 {{ detail_row('Data de Validade', reidi.Data_Validade_Reidi.strftime('%d/%m/%Y') if reidi.Data_Validade_Reidi else 'N/A') }}
-{{ detail_row('Status do REIDI', status_badge(reidi.Status_Reidi|default('N/A'), status_tone.get(reidi.Status_Reidi, 'neutral'))) }}
-{{ detail_row('Observações', reidi.Observacoes_Reidi|default('N/A')) }}
+{{ detail_row('Status do REIDI', status_badge(reidi.Status_Reidi or 'N/A', status_tone.get(reidi.Status_Reidi, 'neutral'))) }}
+{{ detail_row('Observações', reidi.Observacoes_Reidi or 'N/A') }}
 {% endcall %}
 
 <div class="flex flex-wrap justify-end gap-2">
