@@ -2780,17 +2780,24 @@ def add_reidi():
             form_data_to_template = {}
             
             if request.method == 'POST':
-                id_obras = int(request.form['id_obras'])
-                numero_portaria = request.form['numero_portaria'].strip()
-                numero_ato_declaratorio = request.form['numero_ato_declaratorio'].strip()
+                id_obras_str = request.form.get('id_obras', '').strip()
+                numero_portaria = request.form.get('numero_portaria', '').strip()
+                numero_ato_declaratorio = request.form.get('numero_ato_declaratorio', '').strip()
                 data_aprovacao_reidi_str = request.form.get('data_aprovacao_reidi', '').strip()
                 data_validade_reidi_str = request.form.get('data_validade_reidi', '').strip()
-                status_reidi = request.form.get('status_reidi', '').strip() 
+                status_reidi = request.form.get('status_reidi', '').strip()
                 observacoes_reidi = request.form.get('observacoes_reidi', '').strip()
 
-                if not all([id_obras, numero_portaria, numero_ato_declaratorio]): 
+                id_obras = None
+                if id_obras_str:
+                    try:
+                        id_obras = int(id_obras_str)
+                    except ValueError:
+                        id_obras = None
+
+                if not all([id_obras, numero_portaria, numero_ato_declaratorio]):
                     flash('Campos obrigatórios (Obra, Número da Portaria, Número do Ato Declaratório) não podem ser vazios.', 'danger')
-                    
+
                     return render_template(
                         'obras/reidis/add_reidi.html',
                         user=current_user,
@@ -2925,8 +2932,16 @@ def edit_reidi(reidi_id):
                 # Outras validações do POST
                 numero_portaria = form_data_received.get('numero_portaria', '').strip()
                 numero_ato_declaratorio = form_data_received.get('numero_ato_declaratorio', '').strip()
-                id_obras = int(form_data_received.get('id_obras'))
+                id_obras_str = form_data_received.get('id_obras', '').strip()
                 status_reidi = form_data_received.get('status_reidi', '').strip()
+
+                id_obras = None
+                if id_obras_str:
+                    try:
+                        id_obras = int(id_obras_str)
+                    except ValueError:
+                        flash('Obra inválida.', 'danger')
+                        is_valid = False
 
                 if not all([numero_portaria, numero_ato_declaratorio, id_obras]):
                     flash('Campos obrigatórios (Número da Portaria, Número do Ato Declaratório, Obra) não podem ser vazios.', 'danger')
@@ -2950,12 +2965,10 @@ def edit_reidi(reidi_id):
                 # Se alguma validação falhou, passamos os dados recebidos para re-preencher o form
                 if not is_valid:
                     form_data_to_template = form_data_received # Repopula com os dados que o usuário digitou
+                    form_data_to_template['ID_Reidis'] = reidi_id
                     # Assegura que datas que voltaram do form e são válidas, sejam passadas como string para o input
                     form_data_to_template['data_aprovacao_reidi'] = data_aprovacao_reidi_str
                     form_data_to_template['data_validade_reidi'] = data_validade_reidi_str
-                    
-                    # Garante que campos numericos/textuais também sejam string para o template, se a validação falhou
-                    # form_data_to_template['numero_portaria'] = form_data_to_template.get('numero_portaria', '')
 
                     return render_template(
                         'obras/reidis/edit_reidi.html',
@@ -3203,22 +3216,39 @@ def add_seguro():
             form_data_to_template = {}
 
             if request.method == 'POST':
-                id_obras = int(request.form['id_obras'])
-                numero_apolice = request.form['numero_apolice'].strip()
-                seguradora = request.form['seguradora'].strip()
-                tipo_seguro = request.form['tipo_seguro'].strip()
-                #valor_segurado = float(request.form.get('valor_segurado', '0').replace(',', '.'))
-                # VERSÃO CORRIGIDA:
+                id_obras_str = request.form.get('id_obras', '').strip()
+                numero_apolice = request.form.get('numero_apolice', '').strip()
+                seguradora = request.form.get('seguradora', '').strip()
+                tipo_seguro = request.form.get('tipo_seguro', '').strip()
                 valor_segurado_str = request.form.get('valor_segurado', '0').replace(',', '.')
-                valor_segurado = Decimal(valor_segurado_str)                
                 data_inicio_vigencia_str = request.form.get('data_inicio_vigencia', '').strip()
                 data_fim_vigencia_str = request.form.get('data_fim_vigencia', '').strip()
                 status_seguro = request.form.get('status_seguro', '').strip()
                 observacoes_seguro = request.form.get('observacoes_seguro', '').strip()
 
+                id_obras = None
+                if id_obras_str:
+                    try:
+                        id_obras = int(id_obras_str)
+                    except ValueError:
+                        id_obras = None
+
                 if not all([id_obras, numero_apolice, seguradora, tipo_seguro, data_inicio_vigencia_str]):
                     flash('Campos obrigatórios (Obra, Número da Apólice, Seguradora, Tipo, Data Início Vigência) não podem ser vazios.', 'danger')
                     # Já temos all_obras, status_options, tipo_seguro_options definidos acima
+                    return render_template(
+                        'obras/seguros/add_seguro.html',
+                        user=current_user,
+                        all_obras=all_obras,
+                        status_options=status_options,
+                        tipo_seguro_options=tipo_seguro_options,
+                        form_data=request.form
+                    )
+
+                try:
+                    valor_segurado = Decimal(valor_segurado_str)
+                except InvalidOperation:
+                    flash('Valor Segurado inválido. Use apenas números.', 'danger')
                     return render_template(
                         'obras/seguros/add_seguro.html',
                         user=current_user,
