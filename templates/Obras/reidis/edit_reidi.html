@@ -36,7 +36,7 @@
     {{ form_select('status_reidi', 'Status do REIDI', status_options, selected=reidi.Status_Reidi|default(''), placeholder='Selecione o Status') }}
   </div>
   <div class="mt-4">
-    {{ form_field('observacoes_reidi', 'Observações', type='textarea', value=reidi.Observacoes_Reidi|default('')) }}
+    {{ form_field('observacoes_reidi', 'Observações', type='textarea', value=reidi.Observacoes_Reidi|default('', true)) }}
   </div>
 
   <div class="mt-6 flex flex-wrap justify-end gap-2">

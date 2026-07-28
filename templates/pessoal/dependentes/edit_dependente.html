@@ -19,14 +19,14 @@
     {{ form_field('nome_completo', 'Nome Completo do Dependente', value=dependente.Nome_Completo|default(''), required=True) }}
     {{ form_select('parentesco', 'Parentesco', parentesco_options, selected=dependente.Parentesco|default(''), required=True, placeholder='Selecione o Parentesco') }}
     {{ form_field('data_nascimento', 'Data de Nascimento', type='date', value=dependente.Data_Nascimento|default('')) }}
-    {{ form_field('cpf', 'CPF (Opcional)', value=dependente.Cpf|default('')) }}
-    {{ form_field('telefone_emergencia', 'Telefone de Emergência (se for contato de emergência)', value=dependente.Telefone_Emergencia|default('')) }}
+    {{ form_field('cpf', 'CPF (Opcional)', value=dependente.Cpf|default('', true)) }}
+    {{ form_field('telefone_emergencia', 'Telefone de Emergência (se for contato de emergência)', value=dependente.Telefone_Emergencia|default('', true)) }}
   </div>
   <div class="mt-4">
     {{ form_checkbox('contato_emergencia', 'É Contato de Emergência?', checked=dependente.Contato_Emergencia) }}
   </div>
   <div class="mt-4">
-    {{ form_field('observacoes', 'Observações', type='textarea', value=dependente.Observacoes|default('')) }}
+    {{ form_field('observacoes', 'Observações', type='textarea', value=dependente.Observacoes|default('', true)) }}
   </div>
   <div class="mt-6 flex flex-wrap justify-end gap-2">
     <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">

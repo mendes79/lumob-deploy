@@ -14,12 +14,12 @@
 {% call detail_card('Informações Principais') %}
 {{ detail_row('ID do Cliente', '#' ~ cliente.ID_Clientes) }}
 {{ detail_row('Nome do Cliente', cliente.Nome_Cliente|default('N/A')) }}
-{{ detail_row('CNPJ', cliente.CNPJ_Cliente|default('N/A')) }}
-{{ detail_row('Razão Social', cliente.Razao_Social_Cliente|default('N/A')) }}
-{{ detail_row('Endereço', cliente.Endereco_Cliente|default('N/A')) }}
-{{ detail_row('Telefone', cliente.Telefone_Cliente|default('N/A')) }}
-{{ detail_row('Email', cliente.Email_Cliente|default('N/A')) }}
-{{ detail_row('Contato Principal', cliente.Contato_Principal_Nome|default('N/A')) }}
+{{ detail_row('CNPJ', cliente.CNPJ_Cliente or 'N/A') }}
+{{ detail_row('Razão Social', cliente.Razao_Social_Cliente or 'N/A') }}
+{{ detail_row('Endereço', cliente.Endereco_Cliente or 'N/A') }}
+{{ detail_row('Telefone', cliente.Telefone_Cliente or 'N/A') }}
+{{ detail_row('Email', cliente.Email_Cliente or 'N/A') }}
+{{ detail_row('Contato Principal', cliente.Contato_Principal_Nome or 'N/A') }}
 {% endcall %}
 
 <div class="flex flex-wrap justify-end gap-2">

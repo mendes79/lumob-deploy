@@ -15,14 +15,14 @@
 {% call detail_card('Informações Principais') %}
 {{ detail_row('ID do Contrato', '#' ~ contrato.ID_Contratos) }}
 {{ detail_row('Número do Contrato', contrato.Numero_Contrato|default('N/A')) }}
-{{ detail_row('Cliente', contrato.Nome_Cliente|default('N/A')) }}
+{{ detail_row('Cliente', contrato.Nome_Cliente or 'N/A') }}
 {{ detail_row('Valor do Contrato', contrato.Valor_Contrato_Formatado|default('N/A')) }}
 {{ detail_row('Data de Assinatura', contrato.Data_Assinatura.strftime('%d/%m/%Y') if contrato.Data_Assinatura else 'N/A') }}
 {{ detail_row('Data da Ordem de Início', contrato.Data_Ordem_Inicio.strftime('%d/%m/%Y') if contrato.Data_Ordem_Inicio else 'N/A') }}
-{{ detail_row('Prazo do Contrato (Dias)', contrato.Prazo_Contrato_Dias|default('N/A')) }}
+{{ detail_row('Prazo do Contrato (Dias)', contrato.Prazo_Contrato_Dias or 'N/A') }}
 {{ detail_row('Data de Término Previsto', contrato.Data_Termino_Previsto.strftime('%d/%m/%Y') if contrato.Data_Termino_Previsto else 'N/A') }}
 {{ detail_row('Status do Contrato', status_badge(contrato.Status_Contrato|default('N/A'), status_tone.get(contrato.Status_Contrato, 'neutral'))) }}
-{{ detail_row('Observações', contrato.Observacoes|default('N/A')) }}
+{{ detail_row('Observações', contrato.Observacoes or 'N/A') }}
 {% endcall %}
 
 <div class="flex flex-wrap justify-end gap-2">

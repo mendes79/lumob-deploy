@@ -18,7 +18,7 @@
 {{ detail_row('Obra Associada', (art.Numero_Obra ~ ' - ' ~ art.Nome_Obra) if art.Numero_Obra else 'N/A') }}
 {{ detail_row('Valor de Pagamento', 'R$ ' ~ ("%.2f"|format(art.Valor_Pagamento)) if art.Valor_Pagamento is not none else 'N/A') }}
 {{ detail_row('Data de Pagamento', art.Data_Pagamento.strftime('%d/%m/%Y') if art.Data_Pagamento else 'N/A') }}
-{{ detail_row('Status da ART', status_badge(art.Status_Art|default('N/A'), status_tone.get(art.Status_Art, 'neutral'))) }}
+{{ detail_row('Status da ART', status_badge(art.Status_Art or 'N/A', status_tone.get(art.Status_Art, 'neutral'))) }}
 {% endcall %}
 
 <div class="flex flex-wrap justify-end gap-2">

@@ -56,11 +56,11 @@
   <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
     {{ form_field('logradouro', 'Logradouro', value=funcionario.logradouro|default('')) }}
     {{ form_field('numero_end', 'Número', value=funcionario.numero_end|default('')) }}
-    {{ form_field('complemento', 'Complemento', value=funcionario.complemento|default('')) }}
-    {{ form_field('bairro', 'Bairro', value=funcionario.bairro|default('')) }}
-    {{ form_field('cidade', 'Cidade', value=funcionario.cidade|default('')) }}
-    {{ form_field('estado_end', 'Estado (UF)', value=funcionario.estado_end|default('')) }}
-    {{ form_field('cep', 'CEP', value=funcionario.cep|default('')) }}
+    {{ form_field('complemento', 'Complemento', value=funcionario.complemento|default('', true)) }}
+    {{ form_field('bairro', 'Bairro', value=funcionario.bairro|default('', true)) }}
+    {{ form_field('cidade', 'Cidade', value=funcionario.cidade|default('', true)) }}
+    {{ form_field('estado_end', 'Estado (UF)', value=funcionario.estado_end|default('', true)) }}
+    {{ form_field('cep', 'CEP', value=funcionario.cep|default('', true)) }}
   </div>
 
   <h2 class="mb-4 mt-8 border-l-4 border-emerald-600 pl-3 text-sm font-semibold uppercase tracking-wide text-textmuted">Contatos</h2>

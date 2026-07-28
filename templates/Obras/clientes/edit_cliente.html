@@ -17,14 +17,14 @@
   <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
     {{ form_field('cliente_id', 'ID do Cliente', value=cliente.ID_Clientes, readonly=True) }}
     {{ form_field('nome_cliente', 'Nome do Cliente', value=(form_data.nome_cliente if form_data else cliente.Nome_Cliente)|default(''), required=True) }}
-    {{ form_field('cnpj_cliente', 'CNPJ', value=(form_data.cnpj_cliente if form_data else cliente.CNPJ_Cliente)|default(''), required=True) }}
-    {{ form_field('razao_social_cliente', 'Razão Social', value=(form_data.razao_social_cliente if form_data else cliente.Razao_Social_Cliente)|default('')) }}
-    {{ form_field('telefone_cliente', 'Telefone', type='tel', value=(form_data.telefone_cliente if form_data else cliente.Telefone_Cliente)|default('')) }}
-    {{ form_field('email_cliente', 'Email', type='email', value=(form_data.email_cliente if form_data else cliente.Email_Cliente)|default('')) }}
-    {{ form_field('contato_principal_nome', 'Contato Principal', value=(form_data.contato_principal_nome if form_data else cliente.Contato_Principal_Nome)|default('')) }}
+    {{ form_field('cnpj_cliente', 'CNPJ', value=(form_data.cnpj_cliente if form_data else cliente.CNPJ_Cliente)|default('', true), required=True) }}
+    {{ form_field('razao_social_cliente', 'Razão Social', value=(form_data.razao_social_cliente if form_data else cliente.Razao_Social_Cliente)|default('', true)) }}
+    {{ form_field('telefone_cliente', 'Telefone', type='tel', value=(form_data.telefone_cliente if form_data else cliente.Telefone_Cliente)|default('', true)) }}
+    {{ form_field('email_cliente', 'Email', type='email', value=(form_data.email_cliente if form_data else cliente.Email_Cliente)|default('', true)) }}
+    {{ form_field('contato_principal_nome', 'Contato Principal', value=(form_data.contato_principal_nome if form_data else cliente.Contato_Principal_Nome)|default('', true)) }}
   </div>
   <div class="mt-4">
-    {{ form_field('endereco_cliente', 'Endereço', type='textarea', value=(form_data.endereco_cliente if form_data else cliente.Endereco_Cliente)|default('')) }}
+    {{ form_field('endereco_cliente', 'Endereço', type='textarea', value=(form_data.endereco_cliente if form_data else cliente.Endereco_Cliente)|default('', true)) }}
   </div>
 
   <div class="mt-6 flex flex-wrap justify-end gap-2">

@@ -38,7 +38,7 @@
     {{ form_select('status_seguro', 'Status do Seguro', status_options, selected=form_data.status_seguro|default(''), placeholder='Selecione o Status') }}
   </div>
   <div class="mt-4">
-    {{ form_field('observacoes_seguro', 'Observações', type='textarea', value=form_data.observacoes_seguro|default('')) }}
+    {{ form_field('observacoes_seguro', 'Observações', type='textarea', value=form_data.observacoes_seguro|default('', true)) }}
   </div>
 
   <div class="mt-6 flex flex-wrap justify-end gap-2">

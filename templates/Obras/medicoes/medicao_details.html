@@ -18,10 +18,10 @@
 {{ detail_row('Obra Associada', (medicao.Numero_Obra ~ ' - ' ~ medicao.Nome_Obra) if medicao.Numero_Obra else 'N/A') }}
 {{ detail_row('Valor da Medição', medicao.Valor_Medicao_Formatado|default('N/A')) }}
 {{ detail_row('Data da Medição', medicao.Data_Medicao.strftime('%d/%m/%Y') if medicao.Data_Medicao else 'N/A') }}
-{{ detail_row('Mês de Referência', medicao.Mes_Referencia|default('N/A')) }}
+{{ detail_row('Mês de Referência', medicao.Mes_Referencia or 'N/A') }}
 {{ detail_row('Data de Aprovação', medicao.Data_Aprovacao.strftime('%d/%m/%Y') if medicao.Data_Aprovacao else 'N/A') }}
-{{ detail_row('Status da Medição', status_badge(medicao.Status_Medicao|default('N/A'), status_tone.get(medicao.Status_Medicao, 'neutral'))) }}
-{{ detail_row('Observações', medicao.Observacao_Medicao|default('N/A')) }}
+{{ detail_row('Status da Medição', status_badge(medicao.Status_Medicao or 'N/A', status_tone.get(medicao.Status_Medicao, 'neutral'))) }}
+{{ detail_row('Observações', medicao.Observacao_Medicao or 'N/A') }}
 {% endcall %}
 
 <div class="flex flex-wrap justify-end gap-2">

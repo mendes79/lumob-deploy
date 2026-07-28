@@ -22,13 +22,13 @@
 
 {% call detail_card('Dados Pessoais e Documentos') %}
 {{ detail_row('Data de Nascimento', funcionario.Data_Nascimento.strftime('%d/%m/%Y') if funcionario.Data_Nascimento else 'N/A') }}
-{{ detail_row('Estado Civil', funcionario.Estado_Civil | default('N/A')) }}
-{{ detail_row('Nacionalidade', funcionario.Nacionalidade | default('N/A')) }}
-{{ detail_row('Naturalidade', funcionario.Naturalidade | default('N/A')) }}
-{{ detail_row('Gênero', funcionario.Genero | default('N/A')) }}
-{{ detail_row('CPF', funcionario.Cpf_Numero | default('N/A')) }}
+{{ detail_row('Estado Civil', funcionario.Estado_Civil or 'N/A') }}
+{{ detail_row('Nacionalidade', funcionario.Nacionalidade or 'N/A') }}
+{{ detail_row('Naturalidade', funcionario.Naturalidade or 'N/A') }}
+{{ detail_row('Gênero', funcionario.Genero or 'N/A') }}
+{{ detail_row('CPF', funcionario.Cpf_Numero or 'N/A') }}
 {% if funcionario.Rg_Numero %}
-{{ detail_row('RG', funcionario.Rg_Numero ~ ' (Órgão: ' ~ (funcionario.Rg_OrgaoEmissor | default('N/A')) ~ ', UF: ' ~ (funcionario.Rg_UfEmissor | default('N/A')) ~ ', Emissão: ' ~ (funcionario.Rg_DataEmissao.strftime('%d/%m/%Y') if funcionario.Rg_DataEmissao else 'N/A') ~ ')') }}
+{{ detail_row('RG', funcionario.Rg_Numero ~ ' (Órgão: ' ~ (funcionario.Rg_OrgaoEmissor or 'N/A') ~ ', UF: ' ~ (funcionario.Rg_UfEmissor or 'N/A') ~ ', Emissão: ' ~ (funcionario.Rg_DataEmissao.strftime('%d/%m/%Y') if funcionario.Rg_DataEmissao else 'N/A') ~ ')') }}
 {% endif %}
 {% endcall %}
 

@@ -19,10 +19,10 @@
 {% call detail_card('Informações Gerais') %}
 {{ detail_row('ID da Obra', '#' ~ obra.ID_Obras) }}
 {{ detail_row('Número', obra.Numero_Obra|default('N/A')) }}
-{{ detail_row('Cliente', obra.Nome_Cliente|default('N/A')) }}
-{{ detail_row('Contrato', obra.Numero_Contrato|default('N/A')) }}
+{{ detail_row('Cliente', obra.Nome_Cliente or 'N/A') }}
+{{ detail_row('Contrato', obra.Numero_Contrato or 'N/A') }}
 {{ detail_row('Status', status_badge(obra.Status_Obra|default('N/A'), status_tone.get(obra.Status_Obra, 'neutral'))) }}
-{{ detail_row('Endereço', obra.Endereco_Obra|default('N/A')) }}
+{{ detail_row('Endereço', obra.Endereco_Obra or 'N/A') }}
 {{ detail_row('Valor Total (Obra + Aditivos)', 'R$ ' ~ ('%.2f'|format(obra.Valor_Obra + obra.Valor_Aditivo_Total)|replace('.', ',')) if obra.Valor_Obra is not none else 'R$ 0,00') }}
 {{ detail_row('Data Início Prevista', obra.Data_Inicio_Prevista.strftime('%d/%m/%Y') if obra.Data_Inicio_Prevista else 'N/A') }}
 {{ detail_row('Data Fim Prevista', obra.Data_Fim_Prevista.strftime('%d/%m/%Y') if obra.Data_Fim_Prevista else 'N/A') }}
