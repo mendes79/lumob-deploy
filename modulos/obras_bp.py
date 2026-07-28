@@ -1562,7 +1562,18 @@ def edit_art(art_id):
                     is_valid = False
                 
                 # Captura de outros campos
-                id_obras = int(form_data_received.get('id_obras'))
+                id_obras = None
+                id_obras_str = form_data_received.get('id_obras', '').strip()
+                try:
+                    if id_obras_str:
+                        id_obras = int(id_obras_str)
+                    else:
+                        flash('Obra é obrigatória.', 'danger')
+                        is_valid = False
+                except ValueError:
+                    flash('ID da Obra inválido.', 'danger')
+                    is_valid = False
+
                 numero_art = form_data_received.get('numero_art', '').strip()
                 status_art = form_data_received.get('status_art', '').strip()
 
@@ -1587,7 +1598,7 @@ def edit_art(art_id):
                     # Garante que as strings originais do form sejam usadas para repopular os inputs
                     form_data_to_template['data_pagamento'] = data_pagamento_str
                     form_data_to_template['valor_pagamento'] = valor_pagamento_str if valor_pagamento_str else '' # Converte para string ou vazia
-                    form_data_to_template['id_obras'] = str(id_obras) # ID da obra como string
+                    form_data_to_template['id_obras'] = id_obras_str # ID da obra como string
                     form_data_to_template['art_id'] = art_id # Passa o ID da ART também
 
                     return render_template(
@@ -1799,7 +1810,10 @@ def medicoes_module():
             user=current_user,
             medicoes=medicoes,
             all_obras=all_obras,
-            # ... (resto dos parâmetros)
+            status_options=status_options,
+            selected_numero_medicao=search_numero_medicao,
+            selected_obra_id=int(search_obra_id) if search_obra_id else None,
+            selected_status=search_status
         )
     except Exception as e:
         # ... (blocos except não mudam)
@@ -1817,17 +1831,33 @@ def add_medicao():
             obras_manager = ObrasManager(db_base, current_user.tenant_id)
 
             if request.method == 'POST':
-                id_obras = int(request.form['id_obras'])
-                numero_medicao = int(request.form['numero_medicao'])
-                valor_medicao = float(request.form['valor_medicao'].replace(',', '.'))
-                data_medicao_str = request.form['data_medicao'].strip()
+                id_obras_str = request.form.get('id_obras', '').strip()
+                numero_medicao_str = request.form.get('numero_medicao', '').strip()
+                valor_medicao_str = request.form.get('valor_medicao', '').strip()
+                data_medicao_str = request.form.get('data_medicao', '').strip()
                 mes_referencia = request.form.get('mes_referencia', '').strip()
                 data_aprovacao_str = request.form.get('data_aprovacao', '').strip()
-                status_medicao = request.form['status_medicao'].strip()
+                status_medicao = request.form.get('status_medicao', '').strip()
                 observacao_medicao = request.form.get('observacao_medicao', '').strip()
 
-                if not all([id_obras, numero_medicao, valor_medicao, data_medicao_str, status_medicao]):
+                if not all([id_obras_str, numero_medicao_str, valor_medicao_str, data_medicao_str, status_medicao]):
                     flash('Campos obrigatórios (Obra, Número, Valor, Data, Status) não podem ser vazios.', 'danger')
+                    all_obras = obras_manager.get_all_obras_for_dropdown()
+                    status_options = ['Emitida', 'Aprovada', 'Paga', 'Rejeitada']
+                    return render_template(
+                        'obras/medicoes/add_medicao.html',
+                        user=current_user,
+                        all_obras=all_obras,
+                        status_options=status_options,
+                        form_data=request.form
+                    )
+
+                try:
+                    id_obras = int(id_obras_str)
+                    numero_medicao = int(numero_medicao_str)
+                    valor_medicao = float(valor_medicao_str.replace(',', '.'))
+                except ValueError:
+                    flash('Obra, Número da Medição ou Valor inválido. Use números.', 'danger')
                     all_obras = obras_manager.get_all_obras_for_dropdown()
                     status_options = ['Emitida', 'Aprovada', 'Paga', 'Rejeitada']
                     return render_template(
@@ -1982,7 +2012,18 @@ def edit_medicao(medicao_id):
                 mes_referencia = form_data_received.get('mes_referencia', '').strip()
                 status_medicao = form_data_received.get('status_medicao', '').strip()
                 observacao_medicao = form_data_received.get('observacao_medicao', '').strip()
-                id_obras = int(form_data_received.get('id_obras')) # ID da obra é obrigatório
+
+                id_obras = None
+                id_obras_str = form_data_received.get('id_obras', '').strip()
+                try:
+                    if id_obras_str:
+                        id_obras = int(id_obras_str)
+                    else:
+                        flash('Obra é obrigatória.', 'danger')
+                        is_valid = False
+                except ValueError:
+                    flash('ID da Obra inválido.', 'danger')
+                    is_valid = False
 
                 if not all([status_medicao, id_obras]): # Validação final de campos obrigatórios
                         flash('Status e Obra são obrigatórios.', 'danger')
