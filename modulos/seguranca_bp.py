@@ -984,14 +984,33 @@ def add_treinamento():
 
                 nome_treinamento = form_data_received.get('nome_treinamento', '').strip()
                 descricao = form_data_received.get('descricao', '').strip()
-                carga_horaria_horas = float(form_data_received.get('carga_horaria_horas', '0').replace(',', '.'))
                 tipo_treinamento = form_data_received.get('tipo_treinamento', '').strip()
-                validade_dias = int(form_data_received.get('validade_dias', 0)) if form_data_received.get('validade_dias', '').strip() else None
                 instrutor_responsavel = form_data_received.get('instrutor_responsavel', '').strip()
 
                 is_valid = True
 
-                if not all([nome_treinamento, carga_horaria_horas, tipo_treinamento]):
+                carga_horaria_horas = None
+                carga_horaria_horas_str = form_data_received.get('carga_horaria_horas', '').strip()
+                try:
+                    if carga_horaria_horas_str:
+                        carga_horaria_horas = float(carga_horaria_horas_str.replace(',', '.'))
+                    else:
+                        flash('Carga Horária é obrigatória.', 'danger')
+                        is_valid = False
+                except ValueError:
+                    flash('Carga Horária inválida. Use números.', 'danger')
+                    is_valid = False
+
+                validade_dias = None
+                validade_dias_str = form_data_received.get('validade_dias', '').strip()
+                try:
+                    if validade_dias_str:
+                        validade_dias = int(validade_dias_str)
+                except ValueError:
+                    flash('Validade (dias) inválida. Use números inteiros.', 'danger')
+                    is_valid = False
+
+                if not all([nome_treinamento, carga_horaria_horas_str, tipo_treinamento]):
                     flash('Campos obrigatórios (Nome, Carga Horária, Tipo) não podem ser vazios.', 'danger')
                     is_valid = False
 
@@ -1104,7 +1123,9 @@ def edit_treinamento(treinamento_id):
                     # Garante que números sejam strings formatadas (ou vazias)
                     form_data_to_template['carga_horaria_horas'] = carga_horaria_horas_str
                     form_data_to_template['validade_dias'] = validade_dias_str
-                    
+                    # Garante que o ID sobreviva pro url_for da tag <form>
+                    form_data_to_template['ID_Treinamento'] = treinamento_id
+
                     return render_template(
                         'seguranca/treinamentos/edit_treinamento.html',
                         user=current_user,
@@ -1298,7 +1319,6 @@ def seguranca_relatorio_treinamentos():
     try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
-            pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
 
             treinamentos_relatorio_data = seguranca_manager.get_treinamentos_para_relatorio(
                 search_nome_treinamento=search_nome_treinamento,
@@ -1307,9 +1327,6 @@ def seguranca_relatorio_treinamentos():
                 search_matricula_participante=search_matricula_participante
             )
 
-            all_treinamentos_for_filter = seguranca_manager.get_all_treinamentos_for_dropdown()
-            all_funcionarios_for_filter = pessoal_manager.get_all_funcionarios()
-
             tipo_treinamento_options = ['Obrigatório', 'Reciclagem', 'Voluntário', 'Outro']
             status_agendamento_options = ['Programado', 'Realizado', 'Cancelado', 'Adiado']
 
@@ -1317,8 +1334,6 @@ def seguranca_relatorio_treinamentos():
             'seguranca/treinamentos/treinamentos_relatorio.html',
             user=current_user,
             treinamentos_relatorio_data=treinamentos_relatorio_data,
-            all_treinamentos_for_filter=all_treinamentos_for_filter,
-            all_funcionarios_for_filter=all_funcionarios_for_filter,
             tipo_treinamento_options=tipo_treinamento_options,
             status_agendamento_options=status_agendamento_options,
             selected_nome_treinamento=search_nome_treinamento,
@@ -1350,13 +1365,21 @@ def treinamentos_agendamentos_module():
 
     data_inicio = None
     data_fim = None
+    try:
+        data_inicio = datetime.strptime(search_data_inicio_str, '%Y-%m-%d').date() if search_data_inicio_str else None
+    except ValueError:
+        data_inicio = None
+    try:
+        data_fim = datetime.strptime(search_data_fim_str, '%Y-%m-%d').date() if search_data_fim_str else None
+    except ValueError:
+        data_fim = None
 
     try:
-        if search_data_inicio_str:
-            data_inicio = datetime.strptime(search_data_inicio_str, '%Y-%m-%d').date()
-        if search_data_fim_str:
-            data_fim = datetime.strptime(search_data_fim_str, '%Y-%m-%d').date()
+        search_treinamento_id_int = int(search_treinamento_id) if search_treinamento_id else None
+    except ValueError:
+        search_treinamento_id_int = None
 
+    try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             # --- CORREÇÃO AQUI: INSTANCIAR PessoalManager ---
@@ -1364,7 +1387,7 @@ def treinamentos_agendamentos_module():
             # --- FIM DA CORREÇÃO ---
 
             agendamentos = seguranca_manager.get_all_treinamentos_agendamentos(
-                search_treinamento_id=int(search_treinamento_id) if search_treinamento_id else None,
+                search_treinamento_id=search_treinamento_id_int,
                 search_status=search_status,
                 search_data_inicio=data_inicio,
                 search_data_fim=data_fim
@@ -1382,7 +1405,7 @@ def treinamentos_agendamentos_module():
             agendamentos=agendamentos,
             all_treinamentos=all_treinamentos,
             status_agendamento_options=status_agendamento_options,
-            selected_treinamento_id=int(search_treinamento_id) if search_treinamento_id else None,
+            selected_treinamento_id=search_treinamento_id_int,
             selected_status=search_status,
             selected_data_inicio=search_data_inicio_str,
             selected_data_fim=search_data_fim_str
@@ -1418,7 +1441,7 @@ def add_treinamento_agendamento():
             if request.method == 'POST':
                 form_data_received = request.form.to_dict()
 
-                id_treinamento = int(form_data_received.get('id_treinamento'))
+                id_treinamento_str = form_data_received.get('id_treinamento', '').strip()
                 data_hora_inicio_str = form_data_received.get('data_hora_inicio', '').strip()
                 data_hora_fim_str = form_data_received.get('data_hora_fim', '').strip()
                 local_treinamento = form_data_received.get('local_treinamento', '').strip()
@@ -1429,8 +1452,16 @@ def add_treinamento_agendamento():
                 data_hora_fim = None
                 is_valid = True
 
-                if not all([id_treinamento, data_hora_inicio_str, status_agendamento]):
+                if not all([id_treinamento_str, data_hora_inicio_str, status_agendamento]):
                     flash('Campos obrigatórios (Treinamento, Data/Hora Início, Status) não podem ser vazios.', 'danger')
+                    is_valid = False
+
+                id_treinamento = None
+                try:
+                    if id_treinamento_str:
+                        id_treinamento = int(id_treinamento_str)
+                except ValueError:
+                    flash('Treinamento selecionado é inválido.', 'danger')
                     is_valid = False
 
                 try:
@@ -1507,7 +1538,7 @@ def edit_treinamento_agendamento(agendamento_id):
             if request.method == 'POST':
                 form_data_received = request.form.to_dict()
 
-                id_treinamento = int(form_data_received.get('id_treinamento'))
+                id_treinamento_str = form_data_received.get('id_treinamento', '').strip()
                 data_hora_inicio_str = form_data_received.get('data_hora_inicio', '').strip()
                 data_hora_fim_str = form_data_received.get('data_hora_fim', '').strip()
                 local_treinamento = form_data_received.get('local_treinamento', '').strip()
@@ -1518,8 +1549,16 @@ def edit_treinamento_agendamento(agendamento_id):
                 data_hora_fim = None
                 is_valid = True
 
-                if not all([id_treinamento, data_hora_inicio_str, status_agendamento]):
+                if not all([id_treinamento_str, data_hora_inicio_str, status_agendamento]):
                     flash('Campos obrigatórios (Treinamento, Data/Hora Início, Status) não podem ser vazios.', 'danger')
+                    is_valid = False
+
+                id_treinamento = None
+                try:
+                    if id_treinamento_str:
+                        id_treinamento = int(id_treinamento_str)
+                except ValueError:
+                    flash('Treinamento selecionado é inválido.', 'danger')
                     is_valid = False
 
                 try:
@@ -1533,6 +1572,8 @@ def edit_treinamento_agendamento(agendamento_id):
                 form_data_to_template = form_data_received
                 form_data_to_template['data_hora_inicio'] = data_hora_inicio_str
                 form_data_to_template['data_hora_fim'] = data_hora_fim_str
+                # Garante que o ID sobreviva pro url_for da tag <form>
+                form_data_to_template['ID_Agendamento'] = agendamento_id
 
                 if not is_valid:
                     return render_template(
@@ -1663,8 +1704,13 @@ def export_treinamentos_agendamentos_excel():
                 flash('Formato de data inválido nos filtros de exportação. Use AAAA-MM-DD.', 'danger')
                 return redirect(url_for('seguranca_bp.treinamentos_agendamentos_module'))
 
+            try:
+                search_treinamento_id_int = int(search_treinamento_id) if search_treinamento_id else None
+            except ValueError:
+                search_treinamento_id_int = None
+
             agendamentos_data = seguranca_manager.get_all_treinamentos_agendamentos(
-                search_treinamento_id=int(search_treinamento_id) if search_treinamento_id else None,
+                search_treinamento_id=search_treinamento_id_int,
                 search_status=search_status,
                 search_data_inicio=data_inicio,
                 search_data_fim=data_fim
@@ -1732,8 +1778,13 @@ def treinamentos_participantes_module():
             pessoal_manager = PessoalManager(db_base, current_user.tenant_id) # Precisa instanciar aqui
             all_funcionarios = pessoal_manager.get_all_funcionarios()
 
+            try:
+                search_agendamento_id_int = int(search_agendamento_id) if search_agendamento_id else None
+            except ValueError:
+                search_agendamento_id_int = None
+
             participantes = seguranca_manager.get_all_treinamentos_participantes(
-                search_agendamento_id=int(search_agendamento_id) if search_agendamento_id else None,
+                search_agendamento_id=search_agendamento_id_int,
                 search_matricula=search_matricula,
                 search_presenca=presenca_filter
             )
@@ -1750,7 +1801,7 @@ def treinamentos_participantes_module():
             all_agendamentos=all_agendamentos,
             all_funcionarios=all_funcionarios,
             presenca_options=presenca_options,
-            selected_agendamento_id=int(search_agendamento_id) if search_agendamento_id else None,
+            selected_agendamento_id=search_agendamento_id_int,
             selected_matricula=search_matricula,
             selected_presenca=search_presenca
         )
@@ -1786,19 +1837,35 @@ def add_treinamento_participante():
             if request.method == 'POST':
                 form_data_received = request.form.to_dict()
 
-                id_agendamento = int(form_data_received.get('id_agendamento'))
+                id_agendamento_str = form_data_received.get('id_agendamento', '').strip()
                 matricula_funcionario = form_data_received.get('matricula_funcionario', '').strip()
                 presenca = 'presenca' in request.form
-                nota_avaliacao = float(form_data_received.get('nota_avaliacao', '0').replace(',', '.')) if form_data_received.get('nota_avaliacao', '').strip() else None
+                nota_avaliacao_str = form_data_received.get('nota_avaliacao', '').strip()
                 data_conclusao_str = form_data_received.get('data_conclusao', '').strip()
                 certificado_emitido = 'certificado_emitido' in request.form
 
                 data_conclusao = None
+                nota_avaliacao = None
                 is_valid = True
 
-                if not all([id_agendamento, matricula_funcionario]):
+                if not all([id_agendamento_str, matricula_funcionario]):
                     flash('Campos obrigatórios (Agendamento, Funcionário) não podem ser vazios.', 'danger')
                     is_valid = False
+
+                id_agendamento = None
+                try:
+                    if id_agendamento_str:
+                        id_agendamento = int(id_agendamento_str)
+                except ValueError:
+                    flash('Agendamento selecionado é inválido.', 'danger')
+                    is_valid = False
+
+                if nota_avaliacao_str:
+                    try:
+                        nota_avaliacao = float(nota_avaliacao_str.replace(',', '.'))
+                    except ValueError:
+                        flash('Nota de Avaliação inválida. Use números.', 'danger')
+                        is_valid = False
 
                 if data_conclusao_str:
                     try:
@@ -1811,7 +1878,7 @@ def add_treinamento_participante():
                     flash('Nota de Avaliação deve ser entre 0 e 10.', 'danger')
                     is_valid = False
 
-                if seguranca_manager.get_participante_by_agendamento_funcionario(id_agendamento, matricula_funcionario):
+                if is_valid and seguranca_manager.get_participante_by_agendamento_funcionario(id_agendamento, matricula_funcionario):
                     flash('Este funcionário já está registrado para este agendamento.', 'danger')
                     is_valid = False
 
@@ -1838,6 +1905,13 @@ def add_treinamento_participante():
                     return redirect(url_for('seguranca_bp.treinamentos_participantes_module'))
                 else:
                     flash('Erro ao adicionar participante. Verifique os dados e tente novamente.', 'danger')
+            else:
+                agendamento_id_prefill = request.args.get('agendamento_id_prefill')
+                if agendamento_id_prefill:
+                    try:
+                        form_data_to_template['id_agendamento'] = str(int(agendamento_id_prefill))
+                    except ValueError:
+                        pass
 
             return render_template(
                 'seguranca/treinamentos/participantes/add_participante.html',
@@ -1882,19 +1956,35 @@ def edit_treinamento_participante(participante_id):
             if request.method == 'POST':
                 form_data_received = request.form.to_dict()
 
-                id_agendamento = int(form_data_received.get('id_agendamento'))
+                id_agendamento_str = form_data_received.get('id_agendamento', '').strip()
                 matricula_funcionario = form_data_received.get('matricula_funcionario', '').strip()
                 presenca = 'presenca' in request.form
-                nota_avaliacao = float(form_data_received.get('nota_avaliacao', '0').replace(',', '.')) if form_data_received.get('nota_avaliacao', '').strip() else None
+                nota_avaliacao_str = form_data_received.get('nota_avaliacao', '').strip()
                 data_conclusao_str = form_data_received.get('data_conclusao', '').strip()
                 certificado_emitido = 'certificado_emitido' in request.form
 
                 data_conclusao = None
+                nota_avaliacao = None
                 is_valid = True
 
-                if not all([id_agendamento, matricula_funcionario]):
+                if not all([id_agendamento_str, matricula_funcionario]):
                     flash('Campos obrigatórios (Agendamento, Funcionário) não podem ser vazios.', 'danger')
                     is_valid = False
+
+                id_agendamento = None
+                try:
+                    if id_agendamento_str:
+                        id_agendamento = int(id_agendamento_str)
+                except ValueError:
+                    flash('Agendamento selecionado é inválido.', 'danger')
+                    is_valid = False
+
+                if nota_avaliacao_str:
+                    try:
+                        nota_avaliacao = float(nota_avaliacao_str.replace(',', '.'))
+                    except ValueError:
+                        flash('Nota de Avaliação inválida. Use números.', 'danger')
+                        is_valid = False
 
                 if data_conclusao_str:
                     try:
@@ -1907,7 +1997,7 @@ def edit_treinamento_participante(participante_id):
                     flash('Nota de Avaliação deve ser entre 0 e 10.', 'danger')
                     is_valid = False
 
-                if seguranca_manager.get_participante_by_agendamento_funcionario(id_agendamento, matricula_funcionario, exclude_id=participante_id):
+                if is_valid and seguranca_manager.get_participante_by_agendamento_funcionario(id_agendamento, matricula_funcionario, exclude_id=participante_id):
                     flash('Este funcionário já está registrado para este agendamento.', 'danger')
                     is_valid = False
 
@@ -1915,6 +2005,10 @@ def edit_treinamento_participante(participante_id):
                 form_data_to_template['data_conclusao'] = data_conclusao_str
                 form_data_to_template['presenca'] = presenca
                 form_data_to_template['certificado_emitido'] = certificado_emitido
+                # Garante que o ID sobreviva pro url_for da tag <form>
+                form_data_to_template['ID_Participante'] = participante_id
+                # Normaliza a nota pra número, evita crash no '%.2f'|format no template
+                form_data_to_template['nota_avaliacao'] = nota_avaliacao
 
                 if not is_valid:
                     return render_template(
@@ -2036,8 +2130,13 @@ def export_treinamentos_participantes_excel():
             elif search_presenca == 'False':
                 presenca_filter = False
 
+            try:
+                search_agendamento_id_int = int(search_agendamento_id) if search_agendamento_id else None
+            except ValueError:
+                search_agendamento_id_int = None
+
             participantes_data = seguranca_manager.get_all_treinamentos_participantes(
-                search_agendamento_id=int(search_agendamento_id) if search_agendamento_id else None,
+                search_agendamento_id=search_agendamento_id_int,
                 search_matricula=search_matricula,
                 search_presenca=presenca_filter
             )
