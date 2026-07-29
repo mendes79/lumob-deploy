@@ -42,11 +42,23 @@ def users_module():
 @login_required
 @admin_required('Acesso negado. Apenas administradores podem adicionar usuários.')
 def add_user():
+    available_roles = ['admin', 'rh', 'engenheiro', 'editor', 'seguranca']
+
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
-        role = request.form['role']
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        role = request.form.get('role')
+
+        if not username or not email or not password or not role:
+            flash("Nome de usuário, Email, Senha e Papel (Role) são obrigatórios.", 'danger')
+            return render_template('users/add_user.html', user=current_user, available_roles=available_roles,
+                                   old_username=username, old_email=email, old_role=role)
+
+        if role not in available_roles:
+            flash("Papel (Role) inválido.", 'danger')
+            return render_template('users/add_user.html', user=current_user, available_roles=available_roles,
+                                   old_username=username, old_email=email, old_role=role)
 
         try:
             with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
@@ -54,13 +66,11 @@ def add_user():
 
                 if user_manager.find_user_by_username(username):
                     flash(f"Usuário '{username}' já existe. Por favor, escolha outro.", 'danger')
-                    available_roles = ['admin', 'rh', 'engenheiro', 'editor', 'seguranca']
                     return render_template('users/add_user.html', user=current_user, available_roles=available_roles,
                                            old_username=username, old_email=email, old_role=role)
 
                 if user_manager.find_user_by_email(email):
                     flash(f"Este e-mail '{email}' já está em uso. Por favor, escolha outro.", 'danger')
-                    available_roles = ['admin', 'rh', 'engenheiro', 'editor', 'seguranca']
                     return render_template('users/add_user.html', user=current_user, available_roles=available_roles,
                                            old_username=username, old_email=email, old_role=role)
 
@@ -77,8 +87,7 @@ def add_user():
             flash(f"Ocorreu um erro inesperado: {e}", 'danger')
             print(f"Erro inesperado durante a adição de usuário: {e}")
 
-    # Para a página GET, ou em caso de erro no POST
-    available_roles = ['admin', 'rh', 'engenheiro', 'editor', 'seguranca']
+    # GET request
     return render_template('users/add_user.html', user=current_user, available_roles=available_roles)
 
 # 5.1.2 ROTAS DO CRUD DE USUARIOS - EDITAR
@@ -96,31 +105,42 @@ def edit_user(user_id):
                 flash('Usuário não encontrado.', 'danger')
                 return redirect(url_for('users_bp.users_module'))
 
+            available_roles = ['admin', 'rh', 'engenheiro', 'editor', 'seguranca']
+
             if request.method == 'POST':
                 # Este TRY/EXCEPT aninhado é para a lógica de processamento do POST
-                try: 
+                try:
                     new_username = request.form.get('username')
                     new_email = request.form.get('email')
                     new_password = request.form.get('password')
                     new_role = request.form.get('role')
 
+                    # Repopula com os valores recém-digitados em caso de erro,
+                    # em vez do registro original do banco.
+                    user_to_edit_repopulated = dict(user_to_edit)
+                    user_to_edit_repopulated['username'] = new_username
+                    user_to_edit_repopulated['email'] = new_email
+                    user_to_edit_repopulated['role'] = new_role
+
                     if not new_username or not new_role or not new_email:
                         flash("Nome de usuário, Email e Papel (Role) são obrigatórios.", 'danger')
-                        # Este return render_template deve estar ANINHADO ao POST, mas FORA do try/except mais interno
-                        # E com a indentação correta para estar na lógica do POST
-                        return render_template('users/edit_user.html', user_to_edit=user_to_edit, user=current_user, available_roles=['admin', 'rh', 'engenheiro', 'editor', 'seguranca'])
+                        return render_template('users/edit_user.html', user_to_edit=user_to_edit_repopulated, user=current_user, available_roles=available_roles)
+
+                    if new_role not in available_roles:
+                        flash("Papel (Role) inválido.", 'danger')
+                        return render_template('users/edit_user.html', user_to_edit=user_to_edit_repopulated, user=current_user, available_roles=available_roles)
 
                     if new_username != user_to_edit['username']:
                         existing_user_with_new_name = user_manager.find_user_by_username(new_username)
                         if existing_user_with_new_name and existing_user_with_new_name['id'] != user_id:
                             flash(f"O nome de usuário '{new_username}' já está em uso por outro usuário.", 'danger')
-                            return render_template('users/edit_user.html', user_to_edit=user_to_edit, user=current_user, available_roles=['admin', 'rh', 'engenheiro', 'editor', 'seguranca'])
+                            return render_template('users/edit_user.html', user_to_edit=user_to_edit_repopulated, user=current_user, available_roles=available_roles)
 
                     if new_email != user_to_edit['email']:
                         existing_user_with_new_email = user_manager.find_user_by_email(new_email)
                         if existing_user_with_new_email and existing_user_with_new_email['id'] != user_id:
                             flash(f"O e-mail '{new_email}' já está em uso por outro usuário.", 'danger')
-                            return render_template('users/edit_user.html', user_to_edit=user_to_edit, user=current_user, available_roles=['admin', 'rh', 'engenheiro', 'editor', 'seguranca'])
+                            return render_template('users/edit_user.html', user_to_edit=user_to_edit_repopulated, user=current_user, available_roles=available_roles)
 
                     success = user_manager.update_user(user_id, new_username, new_password if new_password else None, new_role, new_email)
                     if success:
@@ -137,10 +157,9 @@ def edit_user(user_id):
                 
                 # Este return é para quando o POST não foi bem-sucedido mas não deu um erro fatal
                 # Deve estar alinhado com o 'if request.method == 'POST':'
-                return render_template('users/edit_user.html', user_to_edit=user_to_edit, user=current_user, available_roles=['admin', 'rh', 'engenheiro', 'editor', 'seguranca'])
-            
+                return render_template('users/edit_user.html', user_to_edit=user_to_edit_repopulated, user=current_user, available_roles=available_roles)
+
             else: # GET request (alinhado com o if request.method == 'POST':)
-                available_roles = ['admin', 'rh', 'engenheiro', 'editor', 'seguranca']
                 return render_template('users/edit_user.html', user_to_edit=user_to_edit, user=current_user, available_roles=available_roles)
 
     except mysql.connector.Error as e: # Estes excepts são para o TRY mais externo (carregamento inicial, erros de DB gerais)
@@ -238,11 +257,14 @@ def manage_user_permissions(user_id):
             current_permissions_ids = user_manager.get_user_module_permissions(user_id)
 
             if request.method == 'POST':
-                # Este TRY/EXCEPT ANINHADO é para a lógica de processamento do POST
-                try: 
-                    selected_module_ids_str = request.form.getlist('module_ids')
+                selected_module_ids_str = request.form.getlist('module_ids')
+                try:
                     selected_module_ids = [int(mod_id) for mod_id in selected_module_ids_str]
+                except ValueError:
+                    selected_module_ids = []
 
+                # Este TRY/EXCEPT ANINHADO é para a lógica de processamento do POST
+                try:
                     if user_manager.update_user_module_permissions(user_id, selected_module_ids):
                         flash(f"Permissões do usuário '{user_to_manage['username']}' atualizadas com sucesso!", 'success')
                         if current_user.id == user_id:
@@ -256,13 +278,14 @@ def manage_user_permissions(user_id):
                 except Exception as e: # Este except é para erros gerais do POST
                     flash(f"Ocorreu um erro inesperado: {e}", 'danger')
                     print(f"Erro inesperado no POST de manage_user_permissions: {e}")
-                
+
                 # Este return render_template é para quando o POST não foi bem-sucedido mas não deu um erro fatal.
                 # Ele deve estar alinhado com o 'if request.method == 'POST':'
+                # Repopula com os checkboxes recém-marcados, não com o estado antigo do banco.
                 return render_template('users/manage_permissions.html',
                                        user_to_manage=user_to_manage,
                                        all_modules=all_modules,
-                                       current_permissions_ids=current_permissions_ids,
+                                       current_permissions_ids=selected_module_ids,
                                        user=current_user)
             
             else: # GET request (alinhado com o 'if request.method == 'POST':')
