@@ -289,7 +289,10 @@ class SegurancaManager(TenantScopedManager):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
         """
         params = (self.tenant_id, matricula_funcionario, tipo_aso, data_emissao, data_vencimento, resultado, medico_responsavel, observacoes)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def get_aso_by_id(self, aso_id):
         """
@@ -340,7 +343,10 @@ class SegurancaManager(TenantScopedManager):
             WHERE {clause} AND ID_ASO = %s
         """
         params = (matricula_funcionario, tipo_aso, data_emissao, data_vencimento, resultado, medico_responsavel, observacoes, tenant_param, aso_id)
-        return self.db.execute_query(query, params, fetch_results=False)
+        result = self.db.execute_query(query, params, fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
     def delete_aso(self, aso_id):
         """
@@ -348,7 +354,10 @@ class SegurancaManager(TenantScopedManager):
         """
         clause, tenant_param = self.tenant_clause()
         query = f"DELETE FROM asos WHERE {clause} AND ID_ASO = %s"
-        return self.db.execute_query(query, (tenant_param, aso_id), fetch_results=False)
+        result = self.db.execute_query(query, (tenant_param, aso_id), fetch_results=False)
+        if result:
+            self._invalidate_dashboard_cache()
+        return result
 
  # --- NOVOS MÉTODOS DE TREINAMENTOS (Catálogo) ---
     def get_all_treinamentos(self, search_nome=None, search_tipo=None):

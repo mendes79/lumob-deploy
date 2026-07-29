@@ -109,6 +109,11 @@ def incidentes_acidentes_module():
     search_responsavel_matricula = request.args.get('responsavel_matricula')
 
     try:
+        search_obra_id_int = int(search_obra_id) if search_obra_id else None
+    except ValueError:
+        search_obra_id_int = None
+
+    try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             obras_manager = ObrasManager(db_base, current_user.tenant_id)
@@ -117,7 +122,7 @@ def incidentes_acidentes_module():
             incidentes = seguranca_manager.get_all_incidentes_acidentes(
                 search_tipo=search_tipo,
                 search_status=search_status,
-                search_obra_id=int(search_obra_id) if search_obra_id else None,
+                search_obra_id=search_obra_id_int,
                 search_responsavel_matricula=search_responsavel_matricula
             )
 
@@ -137,7 +142,7 @@ def incidentes_acidentes_module():
             status_registro_options=status_registro_options,
             selected_tipo=search_tipo,
             selected_status=search_status,
-            selected_obra_id=int(search_obra_id) if search_obra_id else None,
+            selected_obra_id=search_obra_id_int,
             selected_responsavel_matricula=search_responsavel_matricula
         )
     except mysql.connector.Error as e:
@@ -188,6 +193,7 @@ def add_incidente_acidente():
 
                 data_hora_ocorrencia = None
                 data_fechamento = None
+                id_obras_obj = None
                 is_valid = True
 
                 if not all([tipo_registro, data_hora_ocorrencia_str, descricao_resumida, status_registro]):
@@ -207,6 +213,13 @@ def add_incidente_acidente():
                         flash('Formato de Data de Fechamento inválido. Use AAAA-MM-DD.', 'danger')
                         is_valid = False
 
+                if id_obras:
+                    try:
+                        id_obras_obj = int(id_obras)
+                    except ValueError:
+                        flash('ID da Obra inválido.', 'danger')
+                        is_valid = False
+
                 form_data_to_template = form_data_received
                 form_data_to_template['data_hora_ocorrencia'] = data_hora_ocorrencia_str
                 form_data_to_template['data_fechamento'] = data_fechamento_str
@@ -214,7 +227,7 @@ def add_incidente_acidente():
                 if is_valid:
                     success = seguranca_manager.add_incidente_acidente(
                         tipo_registro, data_hora_ocorrencia, local_ocorrencia,
-                        int(id_obras) if id_obras else None, descricao_resumida,
+                        id_obras_obj, descricao_resumida,
                         causas_identificadas, acoes_corretivas_tomadas, acoes_preventivas_recomendadas,
                         status_registro, responsavel_matricula if responsavel_matricula else None,
                         data_fechamento, observacoes
@@ -334,6 +347,8 @@ def edit_incidente_acidente(incidente_id):
                     form_data_to_template['data_fechamento'] = data_fechamento_str
                     # Garante que ID da Obra seja string
                     form_data_to_template['id_obras'] = id_obras_str if id_obras_str else ''
+                    # Garante que o ID do registro sobreviva pro url_for da tag <form>
+                    form_data_to_template['id_incidente_acidente'] = incidente_id
 
                     return render_template(
                         'seguranca/incidentes_acidentes/edit_incidente_acidente.html',
@@ -470,10 +485,15 @@ def export_incidentes_acidentes_excel():
             search_obra_id = request.args.get('obra_id')
             search_responsavel_matricula = request.args.get('responsavel_matricula')
 
+            try:
+                search_obra_id_int = int(search_obra_id) if search_obra_id else None
+            except ValueError:
+                search_obra_id_int = None
+
             incidentes_data = seguranca_manager.get_all_incidentes_acidentes(
                 search_tipo=search_tipo,
                 search_status=search_status,
-                search_obra_id=int(search_obra_id) if search_obra_id else None,
+                search_obra_id=search_obra_id_int,
                 search_responsavel_matricula=search_responsavel_matricula
             )
 
@@ -544,6 +564,15 @@ def asos_module():
     search_data_emissao_fim = request.args.get('data_emissao_fim')
 
     try:
+        search_data_emissao_inicio_obj = datetime.strptime(search_data_emissao_inicio, '%Y-%m-%d').date() if search_data_emissao_inicio else None
+    except ValueError:
+        search_data_emissao_inicio_obj = None
+    try:
+        search_data_emissao_fim_obj = datetime.strptime(search_data_emissao_fim, '%Y-%m-%d').date() if search_data_emissao_fim else None
+    except ValueError:
+        search_data_emissao_fim_obj = None
+
+    try:
         with DatabaseManager(**current_app.config['DB_CONFIG']) as db_base:
             seguranca_manager = SegurancaManager(db_base, current_user.tenant_id)
             pessoal_manager = PessoalManager(db_base, current_user.tenant_id)
@@ -552,8 +581,8 @@ def asos_module():
                 search_matricula=search_matricula,
                 search_tipo=search_tipo,
                 search_resultado=search_resultado,
-                search_data_emissao_inicio=datetime.strptime(search_data_emissao_inicio, '%Y-%m-%d').date() if search_data_emissao_inicio else None,
-                search_data_emissao_fim=datetime.strptime(search_data_emissao_fim, '%Y-%m-%d').date() if search_data_emissao_fim else None
+                search_data_emissao_inicio=search_data_emissao_inicio_obj,
+                search_data_emissao_fim=search_data_emissao_fim_obj
             )
 
             all_funcionarios = pessoal_manager.get_all_funcionarios()
@@ -723,6 +752,7 @@ def edit_aso(aso_id):
                         is_valid = False
 
                 form_data_to_template = form_data_received
+                form_data_to_template['ID_ASO'] = aso_id
                 form_data_to_template['data_emissao'] = data_emissao_str
                 form_data_to_template['data_vencimento'] = data_vencimento_str
 
@@ -835,12 +865,21 @@ def export_asos_excel():
             search_data_emissao_inicio = request.args.get('data_emissao_inicio')
             search_data_emissao_fim = request.args.get('data_emissao_fim')
 
+            try:
+                search_data_emissao_inicio_obj = datetime.strptime(search_data_emissao_inicio, '%Y-%m-%d').date() if search_data_emissao_inicio else None
+            except ValueError:
+                search_data_emissao_inicio_obj = None
+            try:
+                search_data_emissao_fim_obj = datetime.strptime(search_data_emissao_fim, '%Y-%m-%d').date() if search_data_emissao_fim else None
+            except ValueError:
+                search_data_emissao_fim_obj = None
+
             asos_data = seguranca_manager.get_all_asos(
                 search_matricula=search_matricula,
                 search_tipo=search_tipo,
                 search_resultado=search_resultado,
-                search_data_emissao_inicio=datetime.strptime(search_data_emissao_inicio, '%Y-%m-%d').date() if search_data_emissao_inicio else None,
-                search_data_emissao_fim=datetime.strptime(search_data_emissao_fim, '%Y-%m-%d').date() if search_data_emissao_fim else None
+                search_data_emissao_inicio=search_data_emissao_inicio_obj,
+                search_data_emissao_fim=search_data_emissao_fim_obj
             )
 
             if not asos_data:
