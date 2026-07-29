@@ -1,7 +1,7 @@
 # 🏢 LUMOB – Sistema de Gestão Interna Modular
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/mendes79/lumob/main/static/img/banner.png" width="70%" alt="Preview do LUMOB">
+  <img src="https://raw.githubusercontent.com/mendes79/lumob-deploy/main/static/img/banner.png" width="70%" alt="Preview do LUMOB">
 </p>
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
@@ -58,10 +58,16 @@ O **LUMOB** é uma aplicação web modular desenvolvida com Flask e MySQL para e
 ## 🛠️ Tecnologias
 
 - **Backend**: Python 3.10+, Flask 3.1
-- **Banco de Dados**: MySQL 8.0+
+- **Banco de Dados**: MySQL 8.0+, com pool de conexões (`mysql-connector-python` pooling, tamanho configurável via `DB_POOL_SIZE`) e cache de KPIs de dashboard (`Flask-Caching`, TTL curto com invalidação explícita nas escritas)
 - **Exportação**: `pandas`, `openpyxl`
 - **Segurança**: `Flask-Login`, `bcrypt`, `passlib`
-- **Frontend**: HTML, CSS, JS, Jinja2
+- **Frontend**: HTML, CSS, JS, Jinja2, Tailwind CSS (via CDN) com tema claro/escuro
+
+---
+
+## 🎨 Tema Claro/Escuro
+
+Os módulos internos (Pessoal, Obras, SSMA, Usuários) usam um shell Tailwind com tokens de design e alternância entre tema claro e escuro via botão no header. A preferência é salva em `localStorage` e aplicada antes do primeiro paint (evita flash do tema errado). As páginas de Login e Welcome mantêm o layout original (Bootstrap), fora desse sistema.
 
 ---
 
@@ -76,8 +82,8 @@ O **LUMOB** é uma aplicação web modular desenvolvida com Flask e MySQL para e
 
 ```bash
 # Clone o projeto
-git clone https://github.com/mendes79/lumob.git
-cd lumob
+git clone https://github.com/mendes79/lumob-deploy.git
+cd lumob-deploy
 
 # Crie e ative o ambiente virtual
 python -m venv venv
